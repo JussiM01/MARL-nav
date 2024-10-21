@@ -1,7 +1,7 @@
 import numpy
 import torch
 
-from utils import random_states
+from marlnav.utils import random_states
 
 
 class DynamicsModel(object):

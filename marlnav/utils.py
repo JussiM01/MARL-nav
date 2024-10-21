@@ -30,3 +30,16 @@ def action_sampler(params):
         return MockSampler(params)
     elif:
         raise NotImplementedError
+
+
+def init_animation(params, agents_positions): # NOTE: Needs positions of the obstacles and the target.
+
+    fig = plt.figure(figsize=(params['size_x'], params['size_y']))
+    ax = fig.add_axes([0, 0, 1, 1], frameon=False)
+    ax.set_xlim(0, params['x_max']), ax.set_xticks([])
+    ax.set_ylim(0, params['y_max']), ax.set_yticks([])
+
+    agents_scatter = ax.scatter(agents_positions[:, 0], agents_positions[:, 1],
+        s=params['size_agents'], lw=0.5, c=np.array([params['color_agents']]))
+
+    return fig, agents_scatter  # NOTE: Needs scatters/artists for the obstacles and the target.
