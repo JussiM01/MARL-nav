@@ -26,7 +26,7 @@ class Animation:
         self.sampling_style = params['sampling_style']
 
     def update(self, frame_number):
-
+        """Updates the agents' new positions to the `agents_scatter` object."""
         if self.sampling_style = 'policy':
             raise NotImplementedError
         elif self.sampling_style = 'sampler':
@@ -39,6 +39,6 @@ class Animation:
         return (self.agents_scatter,)
 
     def run(self):
-
+        """Runs the animation."""
         _ = FuncAnimation(self.fig, self.update, interval=0, blit=True)
         plt.show()
