@@ -12,9 +12,10 @@ class Animation:
     def __init__(self, model, params):
 
         self.model = model
-        agents_pos = model.agents_positions.cpu().numpy() # NOTE: FIX THIS! (right attribute & slicing)
-        obs_pos = model.obstacles_positions.cpu().numpy() # NOTE: FIX THIS! (right attribute & slicing)
-        target_pos = model.target_position.cpu().numpy() # NOTE: FIX THIS! (right attribute & slicing)
+        self.batch_index = params['batch_index']
+        agents_pos = model.states[self.batch_index,:,:2].cpu().numpy()
+        obs_pos = model.obstacles[self.batch_index,:,:].cpu().numpy()
+        target_pos = model.target[self.batch_index,:,:].cpu().numpy()
         fig, agents_scatter, obs_scatter, target_scatter = init_animation(
             params, agents_pos, obs_pos, target_pos)
         fig.canvas.set_window_title('MARL-nav')
@@ -22,11 +23,17 @@ class Animation:
         self.agents_scatter = agents_scatter # NOTE: Make sure that these are drawn in the right order!
         self.obs_scatter = obs_scatter       # agents should be drawn on top of obstacles and target if
         self.target_scatter = target_scatter # they ever come across/colide with each other.
+        self.sampling_style = params['sampling_style']
 
     def update(self, frame_number):
 
-        self.model.update() # NOTE: FIX THIS! (right method & need actions from a model/sampler)
-        updated_agents_pos = self.model.agents_positions # NOTE: FIX THIS! (right attribute & slicing)
+        if self.sampling_style = 'policy':
+            raise NotImplementedError
+        elif self.sampling_style = 'sampler':
+            actions = self.model._sample_actions()
+
+        self.model._move_agents(actions)
+        updated_agents_pos = self.model.states[self.batch_index,:,:2]
         self.agents_scatter.set_offsets(updated_agents_pos.cpu().numpy())
 
         return (self.agents_scatter,)
