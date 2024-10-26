@@ -21,9 +21,9 @@ class DynamicsModel(object):
         """Resets the agents' and env states, returns observations and info."""
         states, obstacles, target = random_states(self.params)
 
-        self.states = torch.from_numpy(states).to(self.device)
-        self.obstacles = torch.from_numpy(obstacles).to(self.device)
-        self.target = torch.from_numpy(target).to(self.device)
+        self.states = states
+        self.obstacles = obstacles
+        self.target = target
         self.step_num = 1
 
         return self._obsevations(), self.params
@@ -40,6 +40,11 @@ class DynamicsModel(object):
         terminated = self._terminated()
 
         return observations, rewards, terminated, truncated, self.params
+
+    def _sample_actions(self):
+        """Samples an action batch."""
+
+        raise NotImplementedError
 
     def _move_agents(self, actions):
         """Moves the agents' positions according to actions."""

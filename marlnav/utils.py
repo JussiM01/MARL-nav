@@ -1,9 +1,12 @@
 import torch
 
-
 def mock_init(params):
     """Mock intialization for testing."""
-    raise NotImplementedError
+    states = torch.tensor(params['mock_states']).to(params['device'])
+    obstacles = torch.tensor(params['mock_obstacles']).to(params['device'])
+    target = torch.tensor(params['mock_target']).to(params['device'])
+
+    return states, obstacles, target
 
 
 def random_states(params):
