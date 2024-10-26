@@ -35,7 +35,7 @@ class Animation:
         if self.sampling_style = 'policy':
             raise NotImplementedError
         elif self.sampling_style = 'sampler':
-            actions = self.model._sample_actions()
+            actions = self.model.sample_actions()
 
         self.model._move_agents(actions)
         updated_agents_pos = self.model.states[self.batch_index,:,:2]

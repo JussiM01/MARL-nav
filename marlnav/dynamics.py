@@ -1,7 +1,7 @@
 import numpy
 import torch
 
-from marlnav.utils import random_states
+from marlnav.utils import random_states, action_sampler
 
 
 class DynamicsModel(object):
@@ -14,8 +14,7 @@ class DynamicsModel(object):
         self.batch_size = params['batch_size']
         self.num_agents = params['num_agents']
         self.max_step = params['max_step']
-
-        # Maybe also store functions/models for rewards and terminated here?
+        self._sampler = action_sampler(params['sampler'])
 
     def reset(self):
         """Resets the agents' and env states, returns observations and info."""
@@ -41,10 +40,9 @@ class DynamicsModel(object):
 
         return observations, rewards, terminated, truncated, self.params
 
-    def _sample_actions(self):
+    def sample_actions(self):
         """Samples an action batch."""
-
-        raise NotImplementedError
+        return self.sampler()
 
     def _move_agents(self, actions):
         """Moves the agents' positions according to actions."""

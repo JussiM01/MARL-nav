@@ -21,10 +21,17 @@ class MockSampler(object):
     """Mock sampler for testing the dynamics model and its visualization."""
 
     def __init__(self, params):
-        self.params = params
+        (angle00, angle01, angle02) = params['angles'][0]
+        (angle10, angle11, angle12) = params['angles'][1]
+        device = params['device']
+
+        self.angle_batch = (torch.tensor(
+            [[angle00*(-1)*i, angle01*(-1)*i, angle01*(-1)*i],
+            [angle10, angle11, angle12]]).to(device)
+            for i in range(params['max_step']))
 
     def __call__(self):
-        raise NotImplementedError
+        return next(self.angle_batch)
 
 
 def action_sampler(params):
@@ -81,9 +88,11 @@ mock_params = {
             ]],
     },
     'sampler': {
+        'angles':
             [
             [angle00, angle01, angle02],
             [angle10, angle11, angle12]
-            ]
+            ],
+    'device': device,
     }
 }
