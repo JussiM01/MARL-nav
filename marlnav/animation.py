@@ -24,9 +24,14 @@ class Animation:
         self.obs_scatter = obs_scatter       # agents should be drawn on top of obstacles and target if
         self.target_scatter = target_scatter # they ever come across/colide with each other.
         self.sampling_style = params['sampling_style']
+        self.max_step = params['max_step']
 
     def update(self, frame_number):
         """Updates the agents' new positions to the `agents_scatter` object."""
+        if frame_number > self.max_step:
+            print(frame_number) # NOTE: FOR TESTING, REMOVE WHEN READY!
+            exit(0)
+
         if self.sampling_style = 'policy':
             raise NotImplementedError
         elif self.sampling_style = 'sampler':
