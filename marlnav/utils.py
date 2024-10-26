@@ -50,3 +50,40 @@ def init_animation(params, agents_pos, obstacles_pos, target_pos):
         s=params['size_target'], lw=0.5, c=np.array([params['color_target']]))
 
     return fig, agents_scatter, obs_scatter, target_scatter
+
+
+mock_params = {
+    'init': {
+        'mock_states': [
+            [
+            [pos00x, pos00y, dir00x, dir00y, speed00],
+            [pos01x, pos01y, dir01x, dir01y, speed01],
+            [pos02x, pos02y, dir02x, dir02y, speed02]
+            ],
+            [
+            [pos10x, pos10y, dir10x, dir10y, speed10],
+            [pos11x, pos11y, dir11x, dir11y, speed11],
+            [pos12x, pos12y, dir12x, dir12y, speed12]
+            ]],
+        'mock_obstacles': [
+            [
+            [pos00x, pos00y]
+            ], # only one obstacle per batch (for now)
+            [
+            [pos10x, pos10y]
+            ]],
+        'mock_target': [
+            [
+            [pos00x, pos00y]
+            ],
+            [
+            [pos10x, pos10y]
+            ]],
+    },
+    'sampler': {
+            [
+            [angle00, angle01, angle02],
+            [angle10, angle11, angle12]
+            ]
+    }
+}
