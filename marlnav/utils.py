@@ -1,3 +1,4 @@
+import math
 import torch
 
 def mock_init(params):
@@ -26,7 +27,7 @@ class MockSampler(object):
         device = params['device']
 
         self.angle_batch = (torch.tensor(
-            [[angle00*(-1)*i, angle01*(-1)*i, angle01*(-1)*i],
+            [[angle00, angle01*math.sin(0.01*i), angle01*math.sin(0.01*i)], # NOTE: EXPERIMENT WITH THE VALUES!
             [angle10, angle11, angle12]]).to(device)
             for i in range(params['max_step']))
 
@@ -63,36 +64,36 @@ mock_params = {
     'init': {
         'mock_states': [
             [
-            [pos00x, pos00y, dir00x, dir00y, speed00],
-            [pos01x, pos01y, dir01x, dir01y, speed01],
-            [pos02x, pos02y, dir02x, dir02y, speed02]
+            [550., 100., 0., 1., 3.],
+            [750., 100., 0., 1., 3.],
+            [950., 100., 0., 1., 3.]
             ],
             [
-            [pos10x, pos10y, dir10x, dir10y, speed10],
-            [pos11x, pos11y, dir11x, dir11y, speed11],
-            [pos12x, pos12y, dir12x, dir12y, speed12]
+            [750., 675., 1., 0., 300.*math.sin(math.radians(0.45))],
+            [750., 575., 1., 0., 200.*math.sin(math.radians(0.45))],
+            [750., 475., 1., 0., 100.*math.sin(math.radians(0.45))]
             ]],
         'mock_obstacles': [
             [
-            [pos00x, pos00y]
+            [550., 375.]
             ], # only one obstacle per batch (for now)
             [
-            [pos10x, pos10y]
+            [750., 475.]
             ]],
         'mock_target': [
             [
-            [pos00x, pos00y]
+            [550., 700.]
             ],
             [
-            [pos10x, pos10y]
+            [750., 475.]
             ]],
     },
     'sampler': {
         'angles':
             [
-            [angle00, angle01, angle02],
-            [angle10, angle11, angle12]
+            [0., 0.01, 0.5 * 0.01], # NOTE: EXPERIMENT WITH THE VALUES!
+            [math.radians(0.9) * math.radians(0.9), math.radians(0.9)]
             ],
-    'device': device,
+    'device': 'cuda' if torch.cuda.is_available() else 'cpu',
     }
 }
