@@ -43,7 +43,52 @@ if __name__ == '__main__':
     parser.add_argument('-nb', '--num_agents', type=int, default=300,
         help='number of agents in a single environment')
 
+    parser.add_argument('-mo', '--mode', type=str, defult='rendering', # NOTE: Change this to something else
+        help='Mode of the enviroment: `rendering` or `training`')
+
     args = parser.parse_args()
+
+    ### NOTE: This section should be temporary or refactored to a JSON-file ####
+    mock_params = {
+        'init': {
+            'init_method': 'mock_init',
+            'mock_states': [
+                [
+                [550., 100., 0., 1., 3.],
+                [750., 100., 0., 1., 3.],
+                [950., 100., 0., 1., 3.]
+                ],
+                [
+                [750., 675., 1., 0., 300.*math.sin(math.radians(0.45))],
+                [750., 575., 1., 0., 200.*math.sin(math.radians(0.45))],
+                [750., 475., 1., 0., 100.*math.sin(math.radians(0.45))]
+                ]],
+            'mock_obstacles': [
+                [
+                [550., 375.]
+                ], # only one obstacle per batch (for now)
+                [
+                [750., 475.]
+                ]],
+            'mock_target': [
+                [
+                [550., 700.]
+                ],
+                [
+                [750., 475.]
+                ]],
+        },
+        'sampler': {
+            'sample_method': 'mock_sampler',
+            'angles':
+                [
+                [0., 0.01, 0.5 * 0.01], # NOTE: EXPERIMENT WITH THE VALUES!
+                [math.radians(0.9) * math.radians(0.9), math.radians(0.9)]
+                ],
+            'device': 'cuda' if torch.cuda.is_available() else 'cpu',
+        }
+    }
+    ############################################################################
 
     params = {
         'animation': {
@@ -58,6 +103,7 @@ if __name__ == '__main__':
             'size_target': args.size_target,
             'color_target': (0, 1, 0, 1), # NOTE: FIX A PROPER VALUE!
         },
+        'init': mock_params['init'],
         'model': {
             'batch_size': batch_size,
             'num_agents': args.num_agents,
@@ -65,6 +111,7 @@ if __name__ == '__main__':
             'y_bound': args.max_y_value,
             'max_step': args.max_step,
         },
+        'sampler': mock_params['sampler'],
     }
 
     if args.rendering:

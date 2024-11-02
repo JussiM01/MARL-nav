@@ -14,11 +14,12 @@ class DynamicsModel(object):
         self.batch_size = params['batch_size']
         self.num_agents = params['num_agents']
         self.max_step = params['max_step']
+        self.init = params['init']
         self._sampler = action_sampler(params['sampler'])
 
     def reset(self):
         """Resets the agents' and env states, returns observations and info."""
-        states, obstacles, target = random_states(self.params)
+        states, obstacles, target = random_states(self.init)
 
         self.states = states
         self.obstacles = obstacles

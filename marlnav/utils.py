@@ -62,6 +62,7 @@ def init_animation(params, agents_pos, obstacles_pos, target_pos):
 
 mock_params = {
     'init': {
+        'init_method': 'mock_init',
         'mock_states': [
             [
             [550., 100., 0., 1., 3.],
@@ -89,11 +90,12 @@ mock_params = {
             ]],
     },
     'sampler': {
+        'sample_method': 'mock_sampler',
         'angles':
             [
             [0., 0.01, 0.5 * 0.01], # NOTE: EXPERIMENT WITH THE VALUES!
             [math.radians(0.9) * math.radians(0.9), math.radians(0.9)]
             ],
-    'device': 'cuda' if torch.cuda.is_available() else 'cpu',
+        'device': 'cuda' if torch.cuda.is_available() else 'cpu',
     }
 }
