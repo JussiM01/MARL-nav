@@ -9,8 +9,8 @@ def main(params, mode):
     dynamics_model = DynamicsModel(params['model'])
 
     if mode == 'rendering':
-        render = Animation(dynamics_model, params['animation'])
-        render.run()
+        renderer = Animation(dynamics_model, params['animation'])
+        renderer.run()
 
     elif mode == 'training':
         raise NotImplementedError
