@@ -29,7 +29,6 @@ class Animation:
     def update(self, frame_number):
         """Updates the agents' new positions to the `agents_scatter` object."""
         if frame_number > self.max_step:
-            print(frame_number) # NOTE: FOR TESTING, REMOVE WHEN READY!
             exit(0)
 
         if self.sampling_style == 'policy':

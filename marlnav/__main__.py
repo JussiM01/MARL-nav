@@ -102,8 +102,8 @@ if __name__ == '__main__':
             'sample_method': 'mock_sampler',
             'angles':
                 [
-                [0., 0.01, 0.5 * 0.01], # NOTE: EXPERIMENT WITH THE VALUES!
-                [math.radians(0.9), 0.5* math.radians(0.9), math.radians(0.9)]
+                [0., 0., 0.], # NOTE: EXPERIMENT WITH THE VALUES!
+                [math.radians(0.9), math.radians(0.9), math.radians(0.9)]
                 ],
             'device': device,
             'max_step': args.max_step,
