@@ -18,7 +18,7 @@ class Animation:
         target_pos = model.target[self.batch_index,:,:].cpu().numpy()
         fig, agents_scatter, obs_scatter, target_scatter = init_animation(
             params, agents_pos, obs_pos, target_pos)
-        fig.canvas.set_window_title('MARL-nav')
+        fig.canvas.manager.set_window_title('MARL-nav')
         self.fig = fig
         self.agents_scatter = agents_scatter # NOTE: Make sure that these are drawn in the right order!
         self.obs_scatter = obs_scatter       # agents should be drawn on top of obstacles and target if
@@ -32,9 +32,9 @@ class Animation:
             print(frame_number) # NOTE: FOR TESTING, REMOVE WHEN READY!
             exit(0)
 
-        if self.sampling_style = 'policy':
+        if self.sampling_style == 'policy':
             raise NotImplementedError
-        elif self.sampling_style = 'sampler':
+        elif self.sampling_style == 'sampler':
             actions = self.model.sample_actions()
 
         self.model._move_agents(actions)

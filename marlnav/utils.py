@@ -1,4 +1,6 @@
 import math
+import matplotlib.pyplot as plt
+import numpy as np
 import torch
 
 def mock_init(params):
@@ -14,7 +16,7 @@ def random_states(params):
     """Initializes random states of the environment."""
     if params['init_method'] == 'mock_init':
         return mock_init(params)
-    elif:
+    else:
         raise NotImplementedError
 
 
@@ -39,7 +41,7 @@ def action_sampler(params):
     """Samples a random action batch."""
     if params['sample_method'] == 'mock_sampler':
         return MockSampler(params)
-    elif:
+    else:
         raise NotImplementedError
 
 
@@ -53,49 +55,9 @@ def init_animation(params, agents_pos, obstacles_pos, target_pos):
     agents_scatter = ax.scatter(agents_pos[:, 0], agents_pos[:, 1], # NOTE: CHECK the drawing order (should this be last?)
         s=params['size_agents'], lw=0.5, c=np.array([params['color_agents']]))
     obs_scatter = ax.scatter(obstacles_pos[:, 0], obstacles_pos[:, 1],
-        s=params['size_obs'], lw=0.5, c=np.array([params['color_obs']]))
+        s=params['size_obstacles'], lw=0.5,
+        c=np.array([params['color_obstacles']]))
     target_scatter = ax.scatter(target_pos[:, 0], target_pos[:, 1], # NOTE: CHEKC DIMS! this is only sngle position
         s=params['size_target'], lw=0.5, c=np.array([params['color_target']]))
 
     return fig, agents_scatter, obs_scatter, target_scatter
-
-
-mock_params = {
-    'init': {
-        'init_method': 'mock_init',
-        'mock_states': [
-            [
-            [550., 100., 0., 1., 3.],
-            [750., 100., 0., 1., 3.],
-            [950., 100., 0., 1., 3.]
-            ],
-            [
-            [750., 675., 1., 0., 300.*math.sin(math.radians(0.45))],
-            [750., 575., 1., 0., 200.*math.sin(math.radians(0.45))],
-            [750., 475., 1., 0., 100.*math.sin(math.radians(0.45))]
-            ]],
-        'mock_obstacles': [
-            [
-            [550., 375.]
-            ], # only one obstacle per batch (for now)
-            [
-            [750., 475.]
-            ]],
-        'mock_target': [
-            [
-            [550., 700.]
-            ],
-            [
-            [750., 475.]
-            ]],
-    },
-    'sampler': {
-        'sample_method': 'mock_sampler',
-        'angles':
-            [
-            [0., 0.01, 0.5 * 0.01], # NOTE: EXPERIMENT WITH THE VALUES!
-            [math.radians(0.9) * math.radians(0.9), math.radians(0.9)]
-            ],
-        'device': 'cuda' if torch.cuda.is_available() else 'cpu',
-    }
-}

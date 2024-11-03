@@ -1,3 +1,4 @@
+import math
 import numpy
 import torch
 
@@ -17,7 +18,15 @@ class DynamicsModel(object):
         self.init = params['init']
         self._sampler = action_sampler(params['sampler'])
 
-    def reset(self):
+        states, obstacles, target = random_states(self.init) # NOTE: REFACTOR THIS (and reset)!
+
+        self.states = states
+        self.obstacles = obstacles
+        self.target = target
+        self.step_num = 1
+
+
+    def reset(self): # NOTE: REFACTOR THIS!
         """Resets the agents' and env states, returns observations and info."""
         states, obstacles, target = random_states(self.init)
 
@@ -43,7 +52,7 @@ class DynamicsModel(object):
 
     def sample_actions(self):
         """Samples an action batch."""
-        return self.sampler()
+        return self._sampler()
 
     def _move_agents(self, actions):
         """Moves the agents' positions according to actions."""
@@ -55,10 +64,10 @@ class DynamicsModel(object):
     def _rotate_directions(self, actions):
         """Rotates the directions of the whole states batch."""
         directions = self.states[:,:,2:4]
-        self.states[:,:,2:3] = torch.vmap(torch.vmap(
+        self.states[:,:,2:3] = torch.vmap(torch.vmap( # NOTE: FIX THIS!
             self._rotate))(directions, actions)
 
-    def _rotate(self, direction_vector, angle):
+    def _rotate(self, direction_vector, angle): # NOTE: FIX THIS!
         """Rotates the agent's direction by the given angle."""
         rotation_matrix = torch.tensor([[torch.cos(angle), -torch.sin(angle)],
             [torch.sin(angle), torch.cos(angle)]]).to(self.device)

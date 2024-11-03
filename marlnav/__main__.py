@@ -1,7 +1,11 @@
 import argparse
+import math
+import torch
+
+
 
 from marlnav.animation import Animation
-from marlnav.model import DynamicsModel
+from marlnav.dynamics import DynamicsModel
 
 
 def main(params, mode):
@@ -34,19 +38,34 @@ if __name__ == '__main__':
         help='animation plot width in centimeters')
     parser.add_argument('-fy', '--fig_size_y', type=float, default=5.0,
         help='animation plot height in centimeters')
-    parser.add_argument('-sa', '--size_agents', type=int, default=10,
+    parser.add_argument('-sia', '--size_agents', type=int, default=10,
         help='size of the agents in the animation')
+    parser.add_argument('-sio', '--size_obstacles', type=int, default=10,
+        help='size of the obstacle in the animation')
+    parser.add_argument('-sit', '--size_target', type=int, default=10,
+        help='size of the target in the animation')
+    parser.add_argument('-bi', '--batch_index', type=int, default=0, # NOTE: CHANGE LATER?
+        help='index of the rendered environment in the batch')
 
     # model args
-    parser.add_argument('-ba', '--batch_size', type=int,
+    parser.add_argument('-ba', '--batch_size', type=int, default=2, # NOTE: DEFAULT=2 FOR TESTING, change this later?
         help='number of enviroments in the batch')
     parser.add_argument('-nb', '--num_agents', type=int, default=300,
         help='number of agents in a single environment')
+    parser.add_argument('-ms', '--max_step', type=int, default=200, # NOTE: DEFAULT=200 FOR TESTING, change this later?
+        help='maximum number of time steps in the simulation')
 
-    parser.add_argument('-mo', '--mode', type=str, defult='rendering', # NOTE: Change this to something else
-        help='Mode of the enviroment: `rendering` or `training`')
+    # init args
+    # parser.add_argument('-re', '--rendering', action='store_true',
+    #     help='rendering option (no training), action: store_true' )
+    parser.add_argument('-re', '--rendering', type=bool, default=True, # NOTE: FOR DEBUGGING/TESTING ONLY!
+        help='rendering option (no training)') # REPLACE LATER OR USE THE VERSION ABOVE?
+    parser.add_argument('-sa', '--sampling_style', type=str, default='sampler', # NOTE: FOR TESTING
+        help='sampling style, should be either `policy` or `sampler`')
 
     args = parser.parse_args()
+
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
     ### NOTE: This section should be temporary or refactored to a JSON-file ####
     mock_params = {
@@ -77,15 +96,17 @@ if __name__ == '__main__':
                 [
                 [750., 475.]
                 ]],
+            'device': device,
         },
         'sampler': {
             'sample_method': 'mock_sampler',
             'angles':
                 [
                 [0., 0.01, 0.5 * 0.01], # NOTE: EXPERIMENT WITH THE VALUES!
-                [math.radians(0.9) * math.radians(0.9), math.radians(0.9)]
+                [math.radians(0.9), 0.5* math.radians(0.9), math.radians(0.9)]
                 ],
-            'device': 'cuda' if torch.cuda.is_available() else 'cpu',
+            'device': device,
+            'max_step': args.max_step,
         }
     }
     ############################################################################
@@ -102,16 +123,20 @@ if __name__ == '__main__':
             'color_obstacles': (1, 0, 0, 1), # NOTE: FIX A PROPER VALUE!
             'size_target': args.size_target,
             'color_target': (0, 1, 0, 1), # NOTE: FIX A PROPER VALUE!
+            'batch_index': args.batch_index,
+            'sampling_style': args.sampling_style,
+            'max_step': args.max_step,
         },
-        'init': mock_params['init'],
         'model': {
-            'batch_size': batch_size,
+            'device': device,
+            'batch_size': args.batch_size,
             'num_agents': args.num_agents,
             'x_bound': args.max_x_value,
             'y_bound': args.max_y_value,
             'max_step': args.max_step,
+            'sampler': mock_params['sampler'],
+            'init': mock_params['init'],
         },
-        'sampler': mock_params['sampler'],
     }
 
     if args.rendering:
