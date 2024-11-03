@@ -64,13 +64,14 @@ class DynamicsModel(object):
     def _rotate_directions(self, actions):
         """Rotates the directions of the whole states batch."""
         directions = self.states[:,:,2:4]
-        self.states[:,:,2:3] = torch.vmap(torch.vmap( # NOTE: FIX THIS!
+        self.states[:,:,2:4] = torch.vmap(torch.vmap(
             self._rotate))(directions, actions)
 
-    def _rotate(self, direction_vector, angle): # NOTE: FIX THIS!
+    def _rotate(self, direction_vector, angle):
         """Rotates the agent's direction by the given angle."""
-        rotation_matrix = torch.tensor([[torch.cos(angle), -torch.sin(angle)],
-            [torch.sin(angle), torch.cos(angle)]]).to(self.device)
+        rotation_matrix = torch.stack([
+            torch.stack([torch.cos(angle), -torch.sin(angle)]),
+            torch.stack([torch.sin(angle), torch.cos(angle)])]).to(self.device)
 
         return torch.matmul(rotation_matrix, direction_vector)
 
