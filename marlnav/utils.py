@@ -28,9 +28,12 @@ class MockSampler(object):
         (angle10, angle11, angle12) = params['angles'][1]
         device = params['device']
 
-        self.angle_batch = (torch.tensor(
-            [[0., 0.025*math.pi*math.sin(2*math.pi*0.05*i), 0.5*0.025*math.pi*math.sin(2*math.pi*0.05*i)], # NOTE: EXPERIMENT WITH THE VALUES!
-            [angle10, angle11, angle12]]).to(device)
+        self._angle01 = (0.25*math.pi*(-1)**((i//10)%2+1) if (i%10 == 0) else 0.
+            for i in range(params['max_step']))
+        self._angle02 = (0.25*math.pi*(-1)**((i//5)%2+1) if (i%5 == 0) else 0.
+            for i in range(params['max_step']))
+        self.angle_batch = (torch.tensor([[0., next(self._angle01),
+            next(self._angle02)], [angle10, angle11, angle12]]).to(device)
             for i in range(params['max_step']))
 
     def __call__(self):

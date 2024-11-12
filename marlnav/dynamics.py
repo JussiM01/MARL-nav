@@ -59,6 +59,8 @@ class DynamicsModel(object):
         self._rotate_directions(actions)
         directions = self.states[:,:,2:4]
         velocities = self.states[:,:,4:5]
+        print('DIR') # NOTE: FOR TESTING ONLY! REMOVE THIS WHEN IT'S DONE
+        print(directions[0]) # NOTE: FOR TESTING ONLY! REMOVE THIS WHEN IT'S DONE
         self.states[:,:,:2] += directions * velocities
 
     def _rotate_directions(self, actions):
