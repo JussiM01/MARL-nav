@@ -40,9 +40,9 @@ if __name__ == '__main__':
         help='animation plot height in centimeters')
     parser.add_argument('-sia', '--size_agents', type=int, default=10,
         help='size of the agents in the animation')
-    parser.add_argument('-sio', '--size_obstacles', type=int, default=10,
+    parser.add_argument('-sio', '--size_obstacles', type=int, default=100,
         help='size of the obstacle in the animation')
-    parser.add_argument('-sit', '--size_target', type=int, default=10,
+    parser.add_argument('-sit', '--size_target', type=int, default=100,
         help='size of the target in the animation')
     parser.add_argument('-bi', '--batch_index', type=int, default=0, # NOTE: CHANGE LATER?
         help='index of the rendered environment in the batch')
@@ -74,27 +74,27 @@ if __name__ == '__main__':
             'mock_states': [
                 [
                 [550., 100., 0., 1., 3.],
-                [750., 100., 0., 1., 3.],
-                [950., 100., 0., 1., 3.]
+                [750., 100., 0., 1., math.sqrt(2)*3.],
+                [950., 100., 0., 1., math.sqrt(2)*3.]
                 ],
                 [
-                [750., 675., 1., 0., 300.*math.sin(math.radians(0.45))],
-                [750., 575., 1., 0., 200.*math.sin(math.radians(0.45))],
-                [750., 475., 1., 0., 100.*math.sin(math.radians(0.45))]
+                [750., 675., 1., 0., 2*300.*math.sin(math.radians(0.9))],
+                [750., 575., 1., 0., 2*200.*math.sin(math.radians(0.9))],
+                [750., 475., 1., 0., 2*100.*math.sin(math.radians(0.9))]
                 ]],
             'mock_obstacles': [
                 [
                 [550., 375.]
-                ], # only one obstacle per batch (for now)
+                ], # NOTE: only one obstacle per batch (for now)
                 [
-                [750., 475.]
+                [750., 675.]
                 ]],
             'mock_target': [
                 [
                 [550., 700.]
                 ],
                 [
-                [750., 475.]
+                [750., 75.]
                 ]],
             'device': device,
         },
@@ -102,8 +102,8 @@ if __name__ == '__main__':
             'sample_method': 'mock_sampler',
             'angles':
                 [
-                [0., 0., 0.], # NOTE: EXPERIMENT WITH THE VALUES!
-                [math.radians(0.9), math.radians(0.9), math.radians(0.9)]
+                [0., 0., 0.],
+                [-math.radians(1.8), -math.radians(1.8), -math.radians(1.8)]
                 ],
             'device': device,
             'max_step': args.max_step,
