@@ -28,9 +28,6 @@ class Animation:
 
     def update(self, frame_number):
         """Updates the agents' new positions to the `agents_scatter` object."""
-        if frame_number > self.max_step:
-            exit(0)
-
         if self.sampling_style == 'policy':
             raise NotImplementedError
         elif self.sampling_style == 'sampler':
@@ -44,5 +41,6 @@ class Animation:
 
     def run(self):
         """Runs the animation."""
-        _ = FuncAnimation(self.fig, self.update, interval=0, blit=True)
+        _ = FuncAnimation(self.fig, self.update, frames=self.max_step,
+            repeat=False, interval=0, blit=True)
         plt.show()
