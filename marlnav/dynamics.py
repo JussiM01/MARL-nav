@@ -1,7 +1,8 @@
+import math
 import numpy
 import torch
 
-from utils import random_states
+from marlnav.utils import random_states, action_sampler
 
 
 class DynamicsModel(object):
@@ -14,16 +15,24 @@ class DynamicsModel(object):
         self.batch_size = params['batch_size']
         self.num_agents = params['num_agents']
         self.max_step = params['max_step']
+        self.init = params['init']
+        self._sampler = action_sampler(params['sampler'])
 
-        # Maybe also store functions/models for rewards and terminated here?
+        states, obstacles, target = random_states(self.init) # NOTE: REFACTOR THIS (and reset)!
 
-    def reset(self):
+        self.states = states
+        self.obstacles = obstacles
+        self.target = target
+        self.step_num = 1
+
+
+    def reset(self): # NOTE: REFACTOR THIS!
         """Resets the agents' and env states, returns observations and info."""
-        states, obstacles, target = random_states(self.params)
+        states, obstacles, target = random_states(self.init)
 
-        self.states = torch.from_numpy(states).to(self.device)
-        self.obstacles = torch.from_numpy(obstacles).to(self.device)
-        self.target = torch.from_numpy(target).to(self.device)
+        self.states = states
+        self.obstacles = obstacles
+        self.target = target
         self.step_num = 1
 
         return self._obsevations(), self.params
@@ -41,6 +50,10 @@ class DynamicsModel(object):
 
         return observations, rewards, terminated, truncated, self.params
 
+    def sample_actions(self):
+        """Samples an action batch."""
+        return self._sampler()
+
     def _move_agents(self, actions):
         """Moves the agents' positions according to actions."""
         self._rotate_directions(actions)
@@ -51,13 +64,14 @@ class DynamicsModel(object):
     def _rotate_directions(self, actions):
         """Rotates the directions of the whole states batch."""
         directions = self.states[:,:,2:4]
-        self.states[:,:,2:3] = torch.vmap(torch.vmap(
+        self.states[:,:,2:4] = torch.vmap(torch.vmap(
             self._rotate))(directions, actions)
 
     def _rotate(self, direction_vector, angle):
         """Rotates the agent's direction by the given angle."""
-        rotation_matrix = torch.tensor([[torch.cos(angle), -torch.sin(angle)],
-            [torch.sin(angle), torch.cos(angle)]]).to(self.device)
+        rotation_matrix = torch.stack([
+            torch.stack([torch.cos(angle), -torch.sin(angle)]),
+            torch.stack([torch.sin(angle), torch.cos(angle)])]).to(self.device)
 
         return torch.matmul(rotation_matrix, direction_vector)
 
