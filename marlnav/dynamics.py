@@ -80,14 +80,33 @@ class DynamicsModel(object):
 
     def _observations(self):
         """Calculates and returns the observations tensor."""
+        target_angle = torch.stack([self._get_angles(self.states[:,i,:2],
+            self.target, self.states[:,i,2:4])  # NOTE: CHECK THIS
+            for i in range(self.num_agents)])
+
+        target_distance = torch.stack([self._get_angles(self.states[:,i,:2],
+            self.target) for i in range(self.num_agents)])  # NOTE: CHECK THIS
+        #
+        # obstacles_angles = ... NOTE: NEEDES TO BE SUMMED ALSO OVER THE NUMBER OF OBSTACLES (add this attribute)
+        #                         # SUMMATION ORDER NEEDS TO BE CHECKED IN THE STACKING
+        # obstacles_distances = ... NOTE: NEEDES TO BE SUMMED ALSO OVER THE NUMBER OF OBSTACLES (add this attribute)
+        #                         # SUMMATION ORDER NEEDS TO BE CHECKED IN THE STACKING
+
+        others_angles = torch.stack([self._get_angles(self.states[:,i,:3],
+            torch.index_select(self.states, 1, [:,self._others_inds[i],:2]), # NOTE: CHECK THIS
+            self.states[:,i,2:4]) for i in range(self.num_agents)], dim=1) # NOTE: CHECK THIS!
+
+        others_distances = torch.stack([self._get_distances(self.states[:,i,:],
+            torch.index_select(self.states, 1, [:,self._others_inds[i],:2])) # NOTE: CHECK THIS
+            for i in range(self.num_agents)], dim=1) # NOTE: CHECK THIS!
         # return torch.vmap(torch.vmap(
         #     self._single_obs))(self.states, self.obstacles, self.target) # NOTE: CHANGE THIS
         raise NotImplementedError   # SHOULD USE _others_inds FOR states SLICING
 
-    def _single_obs(self, state, obstacles, target):
-        """Calculates and returns single agent's observation tensor."""
-
-        raise NotImplementedError
+    # def _single_obs(self, state, obstacles, target):
+    #     """Calculates and returns single agent's observation tensor.""" # CHECK: IS THIS NEEDED?
+    #
+    #     raise NotImplementedError
 
     def _get_distances(self, own_pos_batch, others_pos_batch): # NOTE: FOR SINGLE AGENT BATCH
     """Returns batch of distances between own and others positions."""
