@@ -17,6 +17,9 @@ class DynamicsModel(object):
         self.max_step = params['max_step']
         self.init = params['init']
         self._sampler = action_sampler(params['sampler'])
+        self._others_inds = torch.tensor(
+            [[i for i in range(self.num_agents) if i != j]
+              for j in range(self.num_agents)]).to(self.device) # NOTE: [[]] if self.num_agents == 1
 
         states, obstacles, target = random_states(self.init) # NOTE: REFACTOR THIS (and reset)!
 
