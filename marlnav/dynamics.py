@@ -80,13 +80,30 @@ class DynamicsModel(object):
 
     def _observations(self):
         """Calculates and returns the observations tensor."""
-        return torch.vmap(torch.vmap(
-            self._single_obs))(self.states, self.obstacles, self.target)
+        # return torch.vmap(torch.vmap(
+        #     self._single_obs))(self.states, self.obstacles, self.target) # NOTE: CHANGE THIS
+        raise NotImplementedError   # SHOULD USE _others_inds FOR states SLICING
 
     def _single_obs(self, state, obstacles, target):
         """Calculates and returns single agent's observation tensor."""
 
         raise NotImplementedError
+
+    def _get_distances(self, own_pos_batch, others_pos_batch): # NOTE: FOR SINGLE AGENT BATCH
+    """Returns batch of distances between own and others positions."""
+
+    return torch.cdist(torch.unsqueeze(own_pos_batch, 1), others_pos_batch)
+
+    def _get_angles(own_pos_batch, others_pos_batch, direction_batch): # NOTE: FOR SINGLE AGENT BATCH
+    """Returns a batch of oriented angle differences from the direction."""
+    difference_batch = others_pos_batch - torch.unsqueeze(own_pos_batch, dim=1)
+    normalized_batch = torch.nn.functional.normalize(difference_batch, dim=2)
+    dot_batch = torch.einsum('bj,bij->bi', direction_batch, normalized_batch)
+    dir_projections = torch.einsum('bi,bj->bij', dot_batch, direction_batch)
+    orthogonal_comps = normalized_batch - dir_projections
+    signs = torch.where(orthogonal_comps[:,:,0] > 0, -1., 1.)
+
+    return signs * torch.acos(dot_batch)
 
     def _rewards(self):
         """Calculates and returns the rewards tensor."""
