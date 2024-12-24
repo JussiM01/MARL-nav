@@ -109,20 +109,20 @@ class DynamicsModel(object):
     #     raise NotImplementedError
 
     def _get_distances(self, own_pos_batch, others_pos_batch): # NOTE: FOR SINGLE AGENT BATCH
-    """Returns batch of distances between own and others positions."""
+        """Returns batch of distances between own and others positions."""
 
-    return torch.cdist(torch.unsqueeze(own_pos_batch, 1), others_pos_batch)
+        return torch.cdist(torch.unsqueeze(own_pos_batch, 1), others_pos_batch)
 
     def _get_angles(own_pos_batch, others_pos_batch, direction_batch): # NOTE: FOR SINGLE AGENT BATCH
-    """Returns a batch of oriented angle differences from the direction."""
-    difference_batch = others_pos_batch - torch.unsqueeze(own_pos_batch, dim=1)
-    normalized_batch = torch.nn.functional.normalize(difference_batch, dim=2)
-    dot_batch = torch.einsum('bj,bij->bi', direction_batch, normalized_batch)
-    dir_projections = torch.einsum('bi,bj->bij', dot_batch, direction_batch)
-    orthogonal_comps = normalized_batch - dir_projections
-    signs = torch.where(orthogonal_comps[:,:,0] > 0, -1., 1.)
+        """Returns a batch of oriented angle differences from the direction."""
+        difference_batch = others_pos_batch - torch.unsqueeze(own_pos_batch, dim=1)
+        normalized_batch = torch.nn.functional.normalize(difference_batch, dim=2)
+        dot_batch = torch.einsum('bj,bij->bi', direction_batch, normalized_batch)
+        dir_projections = torch.einsum('bi,bj->bij', dot_batch, direction_batch)
+        orthogonal_comps = normalized_batch - dir_projections
+        signs = torch.where(orthogonal_comps[:,:,0] > 0, -1., 1.)
 
-    return signs * torch.acos(dot_batch)
+        return signs * torch.acos(dot_batch)
 
     def _rewards(self):
         """Calculates and returns the rewards tensor."""
