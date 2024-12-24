@@ -82,10 +82,10 @@ class DynamicsModel(object):
         """Calculates and returns the observations tensor."""
         target_angle = torch.stack([self._get_angles(self.states[:,i,:2],
             self.target, self.states[:,i,2:4])  # NOTE: CHECK THIS
-            for i in range(self.num_agents)])
+            for i in range(self.num_agents)], dim=1)
 
         target_distance = torch.stack([self._get_angles(self.states[:,i,:2],
-            self.target) for i in range(self.num_agents)])  # NOTE: CHECK THIS
+            self.target) for i in range(self.num_agents)], dim=1)  # NOTE: CHECK THIS
         #
         # obstacles_angles = ... NOTE: NEEDES TO BE SUMMED ALSO OVER THE NUMBER OF OBSTACLES (add this attribute)
         #                         # SUMMATION ORDER NEEDS TO BE CHECKED IN THE STACKING
