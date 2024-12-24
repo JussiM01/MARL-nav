@@ -50,8 +50,10 @@ if __name__ == '__main__':
     # model args
     parser.add_argument('-ba', '--batch_size', type=int, default=2, # NOTE: DEFAULT=2 FOR TESTING, change this later?
         help='number of enviroments in the batch')
-    parser.add_argument('-nb', '--num_agents', type=int, default=300,
+    parser.add_argument('-na', '--num_agents', type=int, default=3,
         help='number of agents in a single environment')
+    parser.add_argument('-no', '--num_obstacles', type=int, default=10,
+        help='number of obstacles in a single environment')
     parser.add_argument('-ms', '--max_step', type=int, default=200, # NOTE: DEFAULT=200 FOR TESTING, change this later?
         help='maximum number of time steps in the simulation')
 
@@ -131,6 +133,7 @@ if __name__ == '__main__':
             'device': device,
             'batch_size': args.batch_size,
             'num_agents': args.num_agents,
+            'num_obstacles': args.num_obstacles,
             'x_bound': args.max_x_value,
             'y_bound': args.max_y_value,
             'max_step': args.max_step,
