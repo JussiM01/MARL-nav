@@ -14,6 +14,7 @@ class DynamicsModel(object):
         self.device = params['device']
         self.batch_size = params['batch_size']
         self.num_agents = params['num_agents']
+        self.num_obstacles = params['num_obstacles'] # NOTE: ADD THIS TO main.py (args & params)
         self.max_step = params['max_step']
         self.init = params['init']
         self._sampler = action_sampler(params['sampler'])
@@ -86,11 +87,17 @@ class DynamicsModel(object):
 
         target_distance = torch.stack([self._get_angles(self.states[:,i,:2],
             self.target) for i in range(self.num_agents)], dim=1)  # NOTE: CHECK THIS
-        #
-        # obstacles_angles = ... NOTE: NEEDES TO BE SUMMED ALSO OVER THE NUMBER OF OBSTACLES (add this attribute)
-        #                         # SUMMATION ORDER NEEDS TO BE CHECKED IN THE STACKING
-        # obstacles_distances = ... NOTE: NEEDES TO BE SUMMED ALSO OVER THE NUMBER OF OBSTACLES (add this attribute)
-        #                         # SUMMATION ORDER NEEDS TO BE CHECKED IN THE STACKING
+
+        obstacles_angles = torch.stack([
+            torch.stack([self._get_angles(self.states[:,i,:2],
+            self.obstacles[:,j,:], self.states[:,i,2:4])  # NOTE: CHECK THIS
+            for i in range(self.num_agents)], dim=1)
+            for j in range(self.num_obstacles)], dim=2)  # NOTE: CHECK THIS
+
+        obstacles_distances = torch.stack([
+            torch.stack([self._get_angles(self.states[:,i,:2],
+            self.obstacles[:,j,:]) for i in range(self.num_agents)], dim=1)  # NOTE: CHECK THIS
+            for j in range(self.num_obstacles)], dim=2) # NOTE: CHECK THIS
 
         others_angles = torch.stack([self._get_angles(self.states[:,i,:2],
             torch.index_select(self.states, 1, self._others_inds[i])[:,:,:2], # NOTE: CHECK THIS
@@ -99,14 +106,15 @@ class DynamicsModel(object):
         others_distances = torch.stack([self._get_distances(self.states[:,i,:2],
             torch.index_select(self.states, 1, self._others_inds[i])[:,i,:2]) # NOTE: CHECK THIS
             for i in range(self.num_agents)], dim=1) # NOTE: CHECK THIS!
-        # return torch.vmap(torch.vmap(
-        #     self._single_obs))(self.states, self.obstacles, self.target) # NOTE: CHANGE THIS
-        raise NotImplementedError   # SHOULD USE _others_inds FOR states SLICING
 
-    # def _single_obs(self, state, obstacles, target):
-    #     """Calculates and returns single agent's observation tensor.""" # CHECK: IS THIS NEEDED?
-    #
-    #     raise NotImplementedError
+        # others_directions = ...
+
+        # others_speeds = ... # NOTE: ADD THESE LATER, ONLY IF THEY ARE MADE DYNAMIC
+
+        return torch.cat([target_angle, target_distance, obstacles_angles,
+            obstacles_distances, others_angles, others_distances], dim=2)  # NOTE: CHECK THIS
+
+            # NOTE LATER ADD others_directions TO STACKING LIST ABOVE (and perhaps speeds too)
 
     def _get_distances(self, own_pos_batch, others_pos_batch): # NOTE: FOR SINGLE AGENT BATCH
         """Returns batch of distances between own and others positions."""
