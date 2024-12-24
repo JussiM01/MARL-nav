@@ -92,12 +92,12 @@ class DynamicsModel(object):
         # obstacles_distances = ... NOTE: NEEDES TO BE SUMMED ALSO OVER THE NUMBER OF OBSTACLES (add this attribute)
         #                         # SUMMATION ORDER NEEDS TO BE CHECKED IN THE STACKING
 
-        others_angles = torch.stack([self._get_angles(self.states[:,i,:3],
-            torch.index_select(self.states, 1, [:,self._others_inds[i],:2]), # NOTE: CHECK THIS
+        others_angles = torch.stack([self._get_angles(self.states[:,i,:2],
+            torch.index_select(self.states, 1, self._others_inds[i])[:,:,:2], # NOTE: CHECK THIS
             self.states[:,i,2:4]) for i in range(self.num_agents)], dim=1) # NOTE: CHECK THIS!
 
-        others_distances = torch.stack([self._get_distances(self.states[:,i,:],
-            torch.index_select(self.states, 1, [:,self._others_inds[i],:2])) # NOTE: CHECK THIS
+        others_distances = torch.stack([self._get_distances(self.states[:,i,:2],
+            torch.index_select(self.states, 1, self._others_inds[i])[:,i,:2]) # NOTE: CHECK THIS
             for i in range(self.num_agents)], dim=1) # NOTE: CHECK THIS!
         # return torch.vmap(torch.vmap(
         #     self._single_obs))(self.states, self.obstacles, self.target) # NOTE: CHANGE THIS
