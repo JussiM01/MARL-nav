@@ -100,19 +100,20 @@ class DynamicsModel(object):
             for j in range(self.num_obstacles)], dim=2)
 
         others_angles = torch.stack([self._get_angles(self.states[:,i,:2],
-            torch.index_select(self.states, 1, self._others_inds[i])[:,:,:2], # NOTE: CHECK THIS
-            self.states[:,i,2:4]) for i in range(self.num_agents)], dim=1) # NOTE: CHECK THIS!
+            torch.index_select(self.states, 1, self._others_inds[i])[:,:,:2],
+            self.states[:,i,2:4]) for i in range(self.num_agents)], dim=1)
 
         others_distances = torch.cat([self._get_distances(self.states[:,i,:2],
-            torch.index_select(self.states, 1, self._others_inds[i])[:,i,:2]) # NOTE: CHECK THIS
-            for i in range(self.num_agents)], dim=1) # NOTE: CHECK THIS!
+            torch.index_select(self.states, 1, self._others_inds[i])[:,:,:2])
+            for i in range(self.num_agents)], dim=1)
 
-        # others_directions = ...
+        # others_directions = ... (OR SHOULD THIS BE DIRECTION DIFFERENCES?
+        #                          AND BELOW VELOCITY DIFFERENCES? (if the speeds are made dynamic))
 
         # others_speeds = ... # NOTE: ADD THESE LATER, ONLY IF THEY ARE MADE DYNAMIC
 
         return torch.cat([target_angle, target_distance, obstacles_angles,
-            obstacles_distances, others_angles, others_distances], dim=2)  # NOTE: CHECK THIS
+            obstacles_distances, others_angles, others_distances], dim=2)
 
             # NOTE LATER ADD others_directions TO STACKING LIST ABOVE (and perhaps speeds too)
 
