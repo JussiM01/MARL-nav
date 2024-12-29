@@ -88,11 +88,11 @@ class DynamicsModel(object):
         target_distance = torch.cat([self._get_distances(self.states[:,i,:2],
             self.target) for i in range(self.num_agents)], dim=1)
 
-        obstacles_angles = torch.stack([
+        obstacles_angles = torch.cat([
             torch.stack([self._get_angles(self.states[:,i,:2],
-            self.obstacles[:,j,:], self.states[:,i,2:4])  # NOTE: CHECK THIS
+            self.obstacles[:,j:j+1,:], self.states[:,i,2:4])
             for i in range(self.num_agents)], dim=1)
-            for j in range(self.num_obstacles)], dim=2)  # NOTE: CHECK THIS
+            for j in range(self.num_obstacles)], dim=2)
 
         obstacles_distances = torch.stack([
             torch.cat([self._get_distances(self.states[:,i,:2],
