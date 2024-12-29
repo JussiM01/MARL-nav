@@ -82,7 +82,7 @@ class DynamicsModel(object):
     def _observations(self):
         """Calculates and returns the observations tensor."""
         target_angle = torch.stack([self._get_angles(self.states[:,i,:2],
-            self.target, self.states[:,i,2:4])  # NOTE: CHECK THIS
+            self.target, self.states[:,i,2:4])
             for i in range(self.num_agents)], dim=1)
 
         target_distance = torch.cat([self._get_distances(self.states[:,i,:2],
@@ -94,10 +94,10 @@ class DynamicsModel(object):
             for i in range(self.num_agents)], dim=1)
             for j in range(self.num_obstacles)], dim=2)
 
-        obstacles_distances = torch.stack([
+        obstacles_distances = torch.cat([
             torch.cat([self._get_distances(self.states[:,i,:2],
-            self.obstacles[:,j,:]) for i in range(self.num_agents)], dim=1)  # NOTE: CHECK THIS
-            for j in range(self.num_obstacles)], dim=2) # NOTE: CHECK THIS
+            self.obstacles[:,j:j+1,:]) for i in range(self.num_agents)], dim=1)
+            for j in range(self.num_obstacles)], dim=2)
 
         others_angles = torch.stack([self._get_angles(self.states[:,i,:2],
             torch.index_select(self.states, 1, self._others_inds[i])[:,:,:2], # NOTE: CHECK THIS
