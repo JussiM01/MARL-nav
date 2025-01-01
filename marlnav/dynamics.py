@@ -27,7 +27,10 @@ class DynamicsModel(object):
         self.states = states
         self.obstacles = obstacles
         self.target = target
-        self.step_num = 1
+
+        # Counters for truncation and terminattion
+        self._step_num = torch.ones([self.batch_size])
+        self._steps_left = (self.max_step -1)*torch.ones([self.batch_size])
 
         # Reward weight factors
         self._collision_factor = 50
@@ -43,7 +46,7 @@ class DynamicsModel(object):
         self.states = states
         self.obstacles = obstacles
         self.target = target
-        self.step_num = 1
+        self._step_num = 1
 
         return self._obsevations(), self.params
 
@@ -51,12 +54,11 @@ class DynamicsModel(object):
         """Updates the states and returns observations, rewards, terminated,
         truncated and info tensors."""
         self._move_agents(actions)
-        self.step_num += 1
+        self._step_num += 1  # NOTE: CHANGE THIS
         truncated = torch.tensor(
-            (self.step_num < self.max_step)).repeat(self.batch_size)
+            (self._step_num < self.max_step)).repeat(self.batch_size) # NOTE: CHANGE THIS
         observations = self._obsevations()
-        rewards = self._rewards(observations)
-        terminated = self._terminated()
+        rewards, terminated = self._rews_and_terms(observations)
 
         return (torch.cat(observations, dim=2), rewards, terminated, truncated,
                 self.params)
