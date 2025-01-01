@@ -2,7 +2,7 @@ import math
 import numpy
 import torch
 
-from marlnav.utils import random_states, action_sampler
+from marlnav.utils import random_states, action_sampler, Observations
 
 
 class DynamicsModel(object):
@@ -29,6 +29,12 @@ class DynamicsModel(object):
         self.target = target
         self.step_num = 1
 
+        # Reward weight factors
+        self._collision_factor = 50
+        self._distance_factor = 5
+        self._heading_factor = 10
+        self._target_factor = 500
+
 
     def reset(self): # NOTE: REFACTOR THIS!
         """Resets the agents' and env states, returns observations and info."""
@@ -49,10 +55,11 @@ class DynamicsModel(object):
         truncated = torch.tensor(
             (self.step_num < self.max_step)).repeat(self.batch_size)
         observations = self._obsevations()
-        rewards = self._rewards()
+        rewards = self._rewards(observations)
         terminated = self._terminated()
 
-        return observations, rewards, terminated, truncated, self.params
+        return (torch.cat(observations, dim=2), rewards, terminated, truncated,
+                self.params)
 
     def sample_actions(self):
         """Samples an action batch."""
@@ -112,10 +119,33 @@ class DynamicsModel(object):
 
         # others_speeds = ... # NOTE: ADD THESE LATER, ONLY IF THEY ARE MADE DYNAMIC
 
-        return torch.cat([target_angle, target_distance, obstacles_angles,
-            obstacles_distances, others_angles, others_distances], dim=2)
+        return Observations([target_angle, target_distance, obstacles_angles,
+            obstacles_distances, others_angles, others_distances])
 
             # NOTE LATER ADD others_directions TO STACKING LIST ABOVE (and perhaps speeds too)
+
+    def _rews_and_terms(self, observations):
+
+        obstacle_collisions = ... # collision_loss(obsta_distances, obs_coll_dist)
+        agent_collisions = ... # collision_loss(agent_distances, agent_coll_dist)
+        in_target_area = ... # torch.where(target_distances < target_radius, 1., 0.)
+        distance_scores = ... # distance_reward(agent_distances, min_dist, max_dist, max_value)
+        heading_scores = ... # heading_reward(heading_diffs, max_angle_diff)
+
+        collisions = torch.clamp(obstacle_collisions + agent_collisions, max=1)
+        all_in_target, _ = torch.min(in_target_area, dim=1)
+        end_conditions = all_in_target > 0
+
+        # ADD TERMINATED CALCULATION HERE
+
+        coll_loss = self._collision_factor * collisions
+        distance_rew = self._distance_factor * distance_scores
+        heading_rew = self._heading_factor * heading_scores
+        target_rew = self._target_factor * all_in_target.expand(
+            size=(self.batch_size, self.num_agents))
+        reward = target_rew + heading_rew + distance_rew -coll_loss
+
+    return reward, terminated
 
     def _get_distances(self, own_pos_batch, others_pos_batch): # NOTE: FOR SINGLE AGENT BATCH
         """Returns batch of distances between own and others positions."""
@@ -133,22 +163,22 @@ class DynamicsModel(object):
 
         return signs * torch.acos(dot_batch)
 
-    def _rewards(self):
-        """Calculates and returns the rewards tensor."""
-        return torch.vmap(torch.vmap(
-            self._single_rew))(self.states, self.obstacles, self.target)
+    # def _rewards(self):
+    #     """Calculates and returns the rewards tensor."""
+    #     return torch.vmap(torch.vmap(
+    #         self._single_rew))(self.states, self.obstacles, self.target)
 
-    def _single_rew(self, state, obstacles, target):
-        """Calculates and returns single agent's reward tensor."""
-
-        raise NotImplementedError
-
-    def _terminated(self):
-        """Calculates and returns the terminated tensor."""
-        return torch.vmap(
-            self._single_env_term)(self.states, self.obstacles, self.target)
-
-    def _single_env_term(self, state, obstacles, target):
-        """Calculates and returns single env's terminated tensor."""
-
-        raise NotImplementedError
+    # def _single_rew(self, state, obstacles, target):
+    #     """Calculates and returns single agent's reward tensor."""
+    #
+    #     raise NotImplementedError
+    #
+    # def _terminated(self):
+    #     """Calculates and returns the terminated tensor."""
+    #     return torch.vmap(
+    #         self._single_env_term)(self.states, self.obstacles, self.target)
+    #
+    # def _single_env_term(self, state, obstacles, target):
+    #     """Calculates and returns single env's terminated tensor."""
+    #
+    #     raise NotImplementedError

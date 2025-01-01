@@ -3,6 +3,14 @@ import matplotlib.pyplot as plt
 import numpy as np
 import torch
 
+from collections import namedtuple
+
+
+Observations = namedtuple('Observations', ['target_angle', 'target_distance',
+    'obstacles_angles', 'obstacles_distances', 'others_angles',
+    'others_distances']) 
+
+
 def mock_init(params):
     """Mock intialization for testing."""
     states = torch.tensor(params['mock_states']).to(params['device'])
