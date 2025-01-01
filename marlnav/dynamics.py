@@ -33,10 +33,19 @@ class DynamicsModel(object):
         self._steps_left = (self.max_step -1)*torch.ones([self.batch_size])
 
         # Reward weight factors
-        self._collision_factor = 50
-        self._distance_factor = 5
-        self._heading_factor = 10
-        self._target_factor = 500
+        self._collision_factor = 50.
+        self._distance_factor = 5.
+        self._heading_factor = 10.
+        self._target_factor = 500.
+
+        # Geometric attributes
+        self._ob_coll_dist = 10.
+        self._ag_coll_dist = 5.
+        self._agents_min_d = 10.
+        self._agents_max_d = 25.
+        self._max_at_prop_d = 2 # NOTE: IS THIS NEEDED ?
+        self._max_angle_diff = math.pi/8
+        self._target_radius = 25.
 
 
     def reset(self): # NOTE: REFACTOR THIS!
