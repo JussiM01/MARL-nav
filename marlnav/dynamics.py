@@ -128,11 +128,11 @@ class DynamicsModel(object):
 
     def _rews_and_terms(self, observations):
 
-        obstacle_collisions = ... # collision_loss(obsta_distances, obs_coll_dist)
-        agent_collisions = ... # collision_loss(agent_distances, agent_coll_dist)
+        obstacle_collisions = ... # self._collision_loss(obsta_distances, obs_coll_dist)
+        agent_collisions = ... # self._collision_loss(agent_distances, agent_coll_dist)
         in_target_area = ... # torch.where(target_distances < target_radius, 1., 0.)
-        distance_scores = ... # distance_reward(agent_distances, min_dist, max_dist, max_value)
-        heading_scores = ... # heading_reward(heading_diffs, max_angle_diff)
+        distance_scores = ... # self._distance_reward(agent_distances, min_dist, max_dist, max_value)
+        heading_scores = ... # self._heading_reward(heading_diffs, max_angle_diff)
 
         collisions = torch.clamp(obstacle_collisions + agent_collisions, max=1)
         all_in_target, _ = torch.min(in_target_area, dim=1)
@@ -147,7 +147,30 @@ class DynamicsModel(object):
             size=(self.batch_size, self.num_agents))
         reward = target_rew + heading_rew + distance_rew -coll_loss
 
-    return reward, terminated
+        return reward, terminated
+
+    def _collision_loss(self, distances, collision_dist): # INPUT SHAPE: (batch_size, num_agents, ...)
+        """Returns a tensor of ones (collisions) and zeros (no collisions)."""
+        collisions = torch.where(distances < collision_dist, 1., 0.) # ... = num_objects or (num_agents-1)
+        detections, _ = torch.max(collisions, dim=2)
+
+        return detections
+
+    def _distance_reward(self, distances, min_dist, max_dist, max_value):
+        """Returns normalized rewards for staying within a proper distance."""
+        above_min = torch.where(min_dist < t, 1., 0.)
+        below_max = torch.where(t < max_dist, 1., 0.)
+        detections = above_min * below_max
+        capped_sums = torch.clamp(torch.sum(detections, dim=2), max=max_value) # MAX DETECTIONS TO CARE ABOUT
+                                                                                # MAYBE NO NEED?
+        return torch.div(capped_sums, max_value) # SCALED BY THE MAX VALUE, THIS IS NEEDED (might dominate other
+                                                                            # rewards for large number of agents)
+
+    def _heading_reward(heading_diffs, max_angle_diff): # INPUT SHAPE: (batch_size, num_agents, 1)
+        """Returns rewards for keeping the heading near target direction."""
+        abs_diffs = torch.squeeze(torch.abs(heading_diffs), dim=2)
+
+        return torch.where(abs_diffs < max_angle_diff, 1., 0.)
 
     def _get_distances(self, own_pos_batch, others_pos_batch): # NOTE: FOR SINGLE AGENT BATCH
         """Returns batch of distances between own and others positions."""
