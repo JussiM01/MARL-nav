@@ -28,7 +28,7 @@ class DynamicsModel(object):
         self.obstacles = obstacles
         self.target = target
 
-        # Counters for truncation and terminattion
+        # Counters for truncation and termination
         self._step_num = torch.ones([self.batch_size])
         self._steps_left = (self.max_step -1)*torch.ones([self.batch_size])
 
