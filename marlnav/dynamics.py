@@ -135,19 +135,25 @@ class DynamicsModel(object):
 
             # NOTE LATER ADD others_directions TO STACKING LIST ABOVE (and perhaps speeds too)
 
-    def _rews_and_terms(self, observations):
+    def _rews_and_terms(self, observations): # NOTE: REFACTOR TO USE HELPER METHODS
 
-        obstacle_collisions = ... # self._collision_loss(obsta_distances, obs_coll_dist)
-        agent_collisions = ... # self._collision_loss(agent_distances, agent_coll_dist)
-        in_target_area = ... # torch.where(target_distances < target_radius, 1., 0.)
-        distance_scores = ... # self._distance_reward(agent_distances, min_dist, max_dist, max_value)
-        heading_scores = ... # self._heading_reward(heading_diffs, max_angle_diff)
+        obstacle_collisions = self._collision_loss(
+            observations.obstacles_distances, self._ob_coll_dist)
+        agent_collisions = self._collision_loss(
+            observations.others_distances, self._ag_coll_dist)
+        in_target_area = torch.where(
+            observations.target_distances < self._target_radius, 1., 0.)
+        distance_scores = self._distance_reward(
+            observations.others_distances, self._agents_min_d,
+            self._agents_max_d, self._max_at_prop_d) # NOTE: DOES THE METHOD REALLY NEED THE LAST PARAMETER ?
+        heading_scores = self._heading_reward(
+            observations.target_angle, self._max_angle_diff)
 
         collisions = torch.clamp(obstacle_collisions + agent_collisions, max=1)
         all_in_target, _ = torch.min(in_target_area, dim=1)
-        end_conditions = all_in_target > 0
 
-        # ADD TERMINATED CALCULATION HERE
+        self._steps_left -= torch.where(all_in_target > 0, 1, 0)
+        terminated = torch.where(self._steps_left == 0, True, False)
 
         coll_loss = self._collision_factor * collisions
         distance_rew = self._distance_factor * distance_scores
