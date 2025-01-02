@@ -202,23 +202,3 @@ class DynamicsModel(object):
         signs = torch.where(orthogonal_comps[:,:,0] > 0, -1., 1.)
 
         return signs * torch.acos(dot_batch)
-
-    # def _rewards(self):
-    #     """Calculates and returns the rewards tensor."""
-    #     return torch.vmap(torch.vmap(
-    #         self._single_rew))(self.states, self.obstacles, self.target)
-
-    # def _single_rew(self, state, obstacles, target):
-    #     """Calculates and returns single agent's reward tensor."""
-    #
-    #     raise NotImplementedError
-    #
-    # def _terminated(self):
-    #     """Calculates and returns the terminated tensor."""
-    #     return torch.vmap(
-    #         self._single_env_term)(self.states, self.obstacles, self.target)
-    #
-    # def _single_env_term(self, state, obstacles, target):
-    #     """Calculates and returns single env's terminated tensor."""
-    #
-    #     raise NotImplementedError
