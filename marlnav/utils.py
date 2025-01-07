@@ -1,6 +1,8 @@
+import json
 import math
 import matplotlib.pyplot as plt
 import numpy as np
+import os
 import torch
 
 from collections import namedtuple
@@ -8,7 +10,7 @@ from collections import namedtuple
 
 Observations = namedtuple('Observations', ['target_angle', 'target_distance',
     'obstacles_angles', 'obstacles_distances', 'others_angles',
-    'others_distances']) 
+    'others_distances'])
 
 
 def mock_init(params):
@@ -77,3 +79,81 @@ def init_animation(params, agents_pos, obstacles_pos, target_pos):
         s=params['size_target'], lw=0.5, c=np.array([params['color_target']]))
 
     return fig, agents_scatter, obs_scatter, target_scatter
+
+
+def load_config(filename, dir):
+    """Returns cofigurtation dictonary read from a configuration file."""
+    config_file = os.path.join('config_files', dir,  filename)
+    with open(config_file, 'r') as f:
+        config = json.load(f)
+
+    return config
+
+
+def save_plot(fig, filename, dir):
+    """Saves a plot with given filename to a directory."""
+    os.makedirs(dir, exist_ok=True) # NOTE: CHECK THAT THIS WORKS!
+
+    fig.savefig(os.path.join(dir, filename))
+    plt.close(fig)
+
+
+def plot_states_and_rews(env, num_steps, batch_ind, agent_ind):
+    """Saves test plots of the states and rewards."""
+    neighbour_inds = list({agent_ind}.intersection({0, 1, 2}))
+    first = neighbour_inds[0]
+    second = neighbour_inds[1]
+
+    target_angles = []
+    target_distances = []
+    all_obs_angels = []
+    all_obs_distances = []
+    angles_to_first = []
+    distances_to_first = []
+    angles_to_second = []
+    distances_to_second = []
+    rewards = []
+
+    for i in range(num_steps):
+        actions = env.sample_actions()
+        obs, rew, _, _, _ = env.step(actions)
+        target_angles += [obs.target_angle[batch_ind, agent_ind,:].value]
+        target_distances += [obs.target_distances[batch_ind, agent_ind,:].value]
+        all_obs_angels += [obs.obstacles_angles[batch_ind, agent_ind,:].value]
+        all_obs_distances += [obs.obstacles_distances[batch_ind, agent_ind,:].value]
+        angles_to_first += [obs.others_angles[batch_ind, first,:].value]
+        distances_to_first += [obs.others_distances[batch_ind, first,:].value]
+        angles_to_second += [obs.others_angles[batch_ind, second,:].value]
+        distances_to_second += [obs.others_distances[batch_ind, second,:].value]
+        rewards += [rew[batch_ind, second,:].value]
+
+    fig, axs = plt.subplots(8, 2)
+    axs[0, 0].plot(target_angles)
+    axs[0, 0].set_title('Angle to target')
+    axs[0, 1].plot(target_distances)
+    axs[0, 1].set_title('Distance to target')
+    axs[1, 0].plot(all_obs_angels)
+    axs[1, 0].set_title('Angle to obstacle')
+    axs[1, 1].plot(all_obs_distances)
+    axs[1, 1].set_title('Distance to obstacle')
+    axs[2, 0].plot(angles_to_first)
+    axs[2, 0].set_title('Angle to agent {}'.format(first))
+    axs[2, 1].plot(distances_to_first)
+    axs[2, 1].set_title('Distance to agent {}'.format(first))
+    axs[3, 0].plot(angles_to_second)
+    axs[3, 0].set_title('Angle to agent {}'.format(second))
+    axs[3, 1].plot(distances_to_second)
+    axs[3, 1].set_title('Distance to agent {}'.format(second))
+
+    for ax in axs.flat:
+        ax.set(xlabel='step number', ylabel='value')
+
+    fig.suptitle('States, batch index: {0}, agent index: {1}'.format(
+        batch_ind, agent_ind))
+    save_plot(fig, 'states.png', 'plots')
+
+    fig, ax = plt.plot(rewards)
+    ax.set(xlabel='step number', ylabel='value')
+    fig.suptitle('Rewards, batch index: {0}, agent index: {1}'.format(
+        batch_ind, agent_ind))
+    save_plot(fig, 'rewards.png', 'plots')
