@@ -6,6 +6,7 @@ import torch
 
 from marlnav.animation import Animation
 from marlnav.dynamics import DynamicsModel
+from marlnav.utils import load_config, plot_states_and_rews # NOTE: LAST ONE IS FOR TESTING. REMOVE LATER ?
 
 
 def main(params, mode):
@@ -15,6 +16,10 @@ def main(params, mode):
     if mode == 'rendering':
         renderer = Animation(dynamics_model, params['animation'])
         renderer.run()
+
+    elif mode == 'plot_saving': # NOTE: FOR TESTING. REMOVE LATER ?
+        # plot_states_and_rews(...)
+        raise NotImplementedError
 
     elif mode == 'training':
         raise NotImplementedError
@@ -64,6 +69,8 @@ if __name__ == '__main__':
         help='rendering option (no training)') # REPLACE LATER OR USE THE VERSION ABOVE?
     parser.add_argument('-sa', '--sampling_style', type=str, default='sampler', # NOTE: FOR TESTING
         help='sampling style, should be either `policy` or `sampler`')
+    parser.add_argument('-pl', '--plot_saving', action='store_true', # NOTE: FOR DEBUGGING/TESTING ONLY!
+        help='Run test for states and rewards and save plots') # REMOVE THIS LATER ?
 
     args = parser.parse_args()
 
@@ -144,6 +151,9 @@ if __name__ == '__main__':
 
     if args.rendering:
         mode = 'rendering'
+    elif args.plot_saving  # NOTE: FOR TESTING. REMOVE LATER ?
+        # params = load_config(...) # NOTE: CREATE THE STATE TEST CONFIG FILE.
+        mode = 'plot_saving'
     else:
         mode = 'training'
 
