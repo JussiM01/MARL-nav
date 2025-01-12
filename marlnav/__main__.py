@@ -63,12 +63,10 @@ if __name__ == '__main__':
         help='maximum number of time steps in the simulation')
 
     # init args
-    # parser.add_argument('-re', '--rendering', action='store_true',
-    #     help='rendering option (no training), action: store_true' )
-    parser.add_argument('-re', '--rendering', type=bool, default=True, # NOTE: FOR DEBUGGING/TESTING ONLY!
-        help='rendering option (no training)') # REPLACE LATER OR USE THE VERSION ABOVE?
+    parser.add_argument('-re', '--rendering', action='store_true',
+        help='rendering option (no training), action: store_true' )
     parser.add_argument('-sa', '--sampling_style', type=str, default='sampler', # NOTE: FOR TESTING
-        help='sampling style, should be either `policy` or `sampler`')
+        help='sampling style, should be either `policy` or `sampler`') # REMOVE THIS LATER ?
     parser.add_argument('-pl', '--plot_saving', action='store_true', # NOTE: FOR DEBUGGING/TESTING ONLY!
         help='Run test for states and rewards and save plots') # REMOVE THIS LATER ?
 
@@ -151,7 +149,7 @@ if __name__ == '__main__':
 
     if args.rendering:
         mode = 'rendering'
-    elif args.plot_saving  # NOTE: FOR TESTING. REMOVE LATER ?
+    elif args.plot_saving:  # NOTE: FOR TESTING. REMOVE LATER ?
         # params = load_config(...) # NOTE: CREATE THE STATE TEST CONFIG FILE.
         mode = 'plot_saving'
     else:
