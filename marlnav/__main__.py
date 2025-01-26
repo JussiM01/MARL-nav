@@ -59,7 +59,7 @@ if __name__ == '__main__':
         help='number of agents in a single environment')
     parser.add_argument('-no', '--num_obstacles', type=int, default=10,
         help='number of obstacles in a single environment')
-    parser.add_argument('-ms', '--max_step', type=int, default=200, # NOTE: DEFAULT=200 FOR TESTING, change this later?
+    parser.add_argument('-ms', '--max_step', type=int, default=100, # NOTE: DEFAULT=100 FOR TESTING, change this later?
         help='maximum number of time steps in the simulation')
 
     # init args
@@ -74,34 +74,34 @@ if __name__ == '__main__':
 
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
-    ### NOTE: This section should be temporary or refactored to a JSON-file ####
+### NOTE: This section should be temporary or refactored to a JSON-file ####
     mock_params = {
         'init': {
             'init_method': 'mock_init',
             'mock_states': [
                 [
-                [550., 100., 0., 1., 3.],
-                [750., 100., 0., 1., math.sqrt(2)*3.],
-                [950., 100., 0., 1., math.sqrt(2)*3.]
+                [750. -300./math.sqrt(3), 375., 0., 1., 3./math.sin(math.pi/3)],
+                [750., 375., 0., 1., 3.],
+                [750. +300./math.sqrt(3), 375., 0., 1., 3./math.sin(math.pi/3)]
                 ],
                 [
-                [750., 675., 1., 0., 2*300.*math.sin(math.radians(0.9))],
-                [750., 575., 1., 0., 2*200.*math.sin(math.radians(0.9))],
-                [750., 475., 1., 0., 2*100.*math.sin(math.radians(0.9))]
+                [450, 675., 1., 0., 2*300.*math.sin(math.radians(0.9))],
+                [750., 675., 0., -1., 6.],
+                [1050., 675., -1., 0., 2*300.*math.sin(math.radians(0.9))]
                 ]],
             'mock_obstacles': [
                 [
-                [550., 375.]
+                [750., 475.]
                 ], # NOTE: only one obstacle per batch (for now)
                 [
-                [750., 675.]
+                [750., 75.]
                 ]],
             'mock_target': [
                 [
-                [550., 700.]
+                [750., 675.]
                 ],
                 [
-                [750., 75.]
+                [1050, 75.]
                 ]],
             'device': device,
         },
@@ -110,13 +110,57 @@ if __name__ == '__main__':
             'angles':
                 [
                 [0., 0., 0.],
-                [-math.radians(1.8), -math.radians(1.8), -math.radians(1.8)]
+                [-math.radians(1.8), 0., math.radians(1.8)]
                 ],
             'device': device,
             'max_step': args.max_step,
         }
     }
     ############################################################################
+
+    # ### NOTE: This section should be temporary or refactored to a JSON-file ####
+    # mock_params = {
+    #     'init': {
+    #         'init_method': 'mock_init',
+    #         'mock_states': [
+    #             [
+    #             [550., 100., 0., 1., 3.],
+    #             [750., 100., 0., 1., math.sqrt(2)*3.],
+    #             [950., 100., 0., 1., math.sqrt(2)*3.]
+    #             ],
+    #             [
+    #             [750., 675., 1., 0., 2*300.*math.sin(math.radians(0.9))],
+    #             [750., 575., 1., 0., 2*200.*math.sin(math.radians(0.9))],
+    #             [750., 475., 1., 0., 2*100.*math.sin(math.radians(0.9))]
+    #             ]],
+    #         'mock_obstacles': [
+    #             [
+    #             [550., 375.]
+    #             ], # NOTE: only one obstacle per batch (for now)
+    #             [
+    #             [750., 675.]
+    #             ]],
+    #         'mock_target': [
+    #             [
+    #             [550., 700.]
+    #             ],
+    #             [
+    #             [750., 75.]
+    #             ]],
+    #         'device': device,
+    #     },
+    #     'sampler': {
+    #         'sample_method': 'mock_sampler',
+    #         'angles':
+    #             [
+    #             [0., 0., 0.],
+    #             [-math.radians(1.8), -math.radians(1.8), -math.radians(1.8)]
+    #             ],
+    #         'device': device,
+    #         'max_step': args.max_step,
+    #     }
+    # }
+    # ############################################################################
 
     params = {
         'animation': {
