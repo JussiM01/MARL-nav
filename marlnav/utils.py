@@ -38,21 +38,43 @@ class MockSampler(object):
         (angle10, angle11, angle12) = params['angles'][1]
         device = params['device']
 
-        self._angle01 = (-0.25*math.pi if i == 0
-            else 0.5*math.pi*(-1)**((i//50)%2+1) if (i%50 == 0) else 0.
+        self._angle00 = (-math.pi/6 if i == 0 else angle00
             for i in range(params['max_step']))
-        self._angle02 = (-0.25*math.pi if i == 0
-            else 0.5*math.pi*(-1)**((i//25)%2+1) if (i%25 == 0) else 0.
+        self._angle02 = (math.pi/6 if i == 0 else angle02
             for i in range(params['max_step']))
-        self._angles1 = ([0.5*angle10, 0.5*angle11, 0.5*angle12] if i == 0
+        self._angles1 = ([0.5*angle10, 0.5*angle11, 0.5*angle12] if i == 0.
             else [angle10, angle11, angle12]
             for i in range(params['max_step']))
-        self.angle_batch = (torch.tensor([[0., next(self._angle01),
+        self.angle_batch = (torch.tensor([[next(self._angle00), angle01,
             next(self._angle02)], next(self._angles1)]).to(device)
             for i in range(params['max_step']))
 
     def __call__(self):
         return next(self.angle_batch)
+
+# class MockSampler(object):
+#     """Mock sampler for testing the dynamics model and its visualization."""
+#
+#     def __init__(self, params):
+#         (angle00, angle01, angle02) = params['angles'][0]
+#         (angle10, angle11, angle12) = params['angles'][1]
+#         device = params['device']
+#
+#         self._angle01 = (-0.25*math.pi if i == 0
+#             else 0.5*math.pi*(-1)**((i//50)%2+1) if (i%50 == 0) else 0.
+#             for i in range(params['max_step']))
+#         self._angle02 = (-0.25*math.pi if i == 0
+#             else 0.5*math.pi*(-1)**((i//25)%2+1) if (i%25 == 0) else 0.
+#             for i in range(params['max_step']))
+#         self._angles1 = ([0.5*angle10, 0.5*angle11, 0.5*angle12] if i == 0
+#             else [angle10, angle11, angle12]
+#             for i in range(params['max_step']))
+#         self.angle_batch = (torch.tensor([[0., next(self._angle01),
+#             next(self._angle02)], next(self._angles1)]).to(device)
+#             for i in range(params['max_step']))
+#
+#     def __call__(self):
+#         return next(self.angle_batch)
 
 
 def action_sampler(params):
