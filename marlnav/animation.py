@@ -25,6 +25,7 @@ class Animation:
         self.target_scatter = target_scatter # they ever come across/colide with each other.
         self.sampling_style = params['sampling_style']
         self.max_step = params['max_step']
+        self.interval = params['interval']
 
     def update(self, frame_number):
         """Updates the agents' new positions to the `agents_scatter` object."""
@@ -42,5 +43,5 @@ class Animation:
     def run(self):
         """Runs the animation."""
         _ = FuncAnimation(self.fig, self.update, frames=self.max_step,
-            repeat=False, interval=0, blit=True)
+            repeat=False, interval=self.interval, blit=True)
         plt.show()

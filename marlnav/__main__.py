@@ -51,6 +51,8 @@ if __name__ == '__main__':
         help='size of the target in the animation')
     parser.add_argument('-bi', '--batch_index', type=int, default=0, # NOTE: CHANGE LATER?
         help='index of the rendered environment in the batch')
+    parser.add_argument('-in', '--interval', type=int, default=10,
+        help='interval param for the animation (small is fast).')
 
     # model args
     parser.add_argument('-ba', '--batch_size', type=int, default=2, # NOTE: DEFAULT=2 FOR TESTING, change this later?
@@ -177,6 +179,7 @@ if __name__ == '__main__':
             'batch_index': args.batch_index,
             'sampling_style': args.sampling_style,
             'max_step': args.max_step,
+            'interval': args.interval,
         },
         'model': {
             'device': device,
