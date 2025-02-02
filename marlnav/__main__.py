@@ -18,8 +18,12 @@ def main(params, mode):
         renderer.run()
 
     elif mode == 'plot_saving': # NOTE: FOR TESTING. REMOVE LATER ?
-        # plot_states_and_rews(...)
-        raise NotImplementedError
+        plot_states_and_rews(
+            dynamics_model,
+            params['animation']['max_step'],
+            params['animation']['batch_index'],
+            params['animation']['agent_index']
+            )
 
     elif mode == 'training':
         raise NotImplementedError
@@ -38,7 +42,7 @@ if __name__ == '__main__':
     parser.add_argument('-my', '--max_y_value', type=float, default=750.0,
         help='maximum value for the y-coordinates')
 
-    # fig args
+    # animation/plot args
     parser.add_argument('-fx', '--fig_size_x', type=float, default=10.0,
         help='animation plot width in centimeters')
     parser.add_argument('-fy', '--fig_size_y', type=float, default=5.0,
@@ -51,6 +55,8 @@ if __name__ == '__main__':
         help='size of the target in the animation')
     parser.add_argument('-bi', '--batch_index', type=int, default=0, # NOTE: CHANGE LATER?
         help='index of the rendered environment in the batch')
+    parser.add_argument('-ai', '--agent_index', type=int, default=0, # NOTE: CHANGE LATER?
+        help='index of the agent for whose rewards are plotted')
     parser.add_argument('-in', '--interval', type=int, default=10,
         help='interval param for the animation (small is fast).')
 
@@ -177,6 +183,7 @@ if __name__ == '__main__':
             'size_target': args.size_target,
             'color_target': (0, 1, 0, 1), # NOTE: FIX A PROPER VALUE!
             'batch_index': args.batch_index,
+            'agent_index': args.agent_index, # NOTE: USED ONLY FOR REWARDS PLOTTING
             'sampling_style': args.sampling_style,
             'max_step': args.max_step,
             'interval': args.interval,
