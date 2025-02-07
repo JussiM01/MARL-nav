@@ -122,7 +122,7 @@ def save_plot(fig, filename, dir):
 
 def plot_states_and_rews(env, num_steps, batch_ind, agent_ind):
     """Saves test plots of the states and rewards."""
-    neighbour_inds = list({agent_ind}.intersection({0, 1, 2}))
+    neighbour_inds = list({0, 1, 2} - {agent_ind})
     first = neighbour_inds[0]
     second = neighbour_inds[1]
 

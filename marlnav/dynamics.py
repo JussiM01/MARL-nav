@@ -66,7 +66,7 @@ class DynamicsModel(object):
         self._step_num += 1  # NOTE: CHANGE THIS
         truncated = torch.tensor(
             (self._step_num < self.max_step)).repeat(self.batch_size) # NOTE: CHANGE THIS
-        observations = self._obsevations()
+        observations = self._observations()
         rewards, terminated = self._rews_and_terms(observations)
 
         return (torch.cat(observations, dim=2), rewards, terminated, truncated,
@@ -130,8 +130,8 @@ class DynamicsModel(object):
 
         # others_speeds = ... # NOTE: ADD THESE LATER, ONLY IF THEY ARE MADE DYNAMIC
 
-        return Observations([target_angle, target_distance, obstacles_angles,
-            obstacles_distances, others_angles, others_distances])
+        return Observations(target_angle, target_distance, obstacles_angles,
+            obstacles_distances, others_angles, others_distances)
 
             # NOTE LATER ADD others_directions TO STACKING LIST ABOVE (and perhaps speeds too)
 
@@ -142,7 +142,7 @@ class DynamicsModel(object):
         agent_collisions = self._collision_loss(
             observations.others_distances, self._ag_coll_dist)
         in_target_area = torch.where(
-            observations.target_distances < self._target_radius, 1., 0.)
+            observations.target_distance < self._target_radius, 1., 0.)
         distance_scores = self._distance_reward(
             observations.others_distances, self._agents_min_d,
             self._agents_max_d, self._max_at_prop_d) # NOTE: DOES THE METHOD REALLY NEED THE LAST PARAMETER ?
@@ -152,7 +152,7 @@ class DynamicsModel(object):
         collisions = torch.clamp(obstacle_collisions + agent_collisions, max=1)
         all_in_target, _ = torch.min(in_target_area, dim=1)
 
-        self._steps_left -= torch.where(all_in_target > 0, 1, 0)
+        self._steps_left -= torch.where(all_in_target > 0, 1, 0) # NOTE: FIX THIS! (DIMS DON'T MATCH)
         terminated = torch.where(self._steps_left == 0, True, False)
 
         coll_loss = self._collision_factor * collisions
@@ -173,15 +173,15 @@ class DynamicsModel(object):
 
     def _distance_reward(self, distances, min_dist, max_dist, max_value):
         """Returns normalized rewards for staying within a proper distance."""
-        above_min = torch.where(min_dist < t, 1., 0.)
-        below_max = torch.where(t < max_dist, 1., 0.)
+        above_min = torch.where(min_dist < distances, 1., 0.)
+        below_max = torch.where(distances < max_dist, 1., 0.)
         detections = above_min * below_max
         capped_sums = torch.clamp(torch.sum(detections, dim=2), max=max_value) # MAX DETECTIONS TO CARE ABOUT
                                                                                 # MAYBE NO NEED?
         return torch.div(capped_sums, max_value) # SCALED BY THE MAX VALUE, THIS IS NEEDED (might dominate other
                                                                             # rewards for large number of agents)
 
-    def _heading_reward(heading_diffs, max_angle_diff): # INPUT SHAPE: (batch_size, num_agents, 1)
+    def _heading_reward(self, heading_diffs, max_angle_diff): # INPUT SHAPE: (batch_size, num_agents, 1)
         """Returns rewards for keeping the heading near target direction."""
         abs_diffs = torch.squeeze(torch.abs(heading_diffs), dim=2)
 
@@ -192,7 +192,7 @@ class DynamicsModel(object):
 
         return torch.cdist(torch.unsqueeze(own_pos_batch, 1), others_pos_batch)
 
-    def _get_angles(own_pos_batch, others_pos_batch, direction_batch): # NOTE: FOR SINGLE AGENT BATCH
+    def _get_angles(self, own_pos_batch, others_pos_batch, direction_batch): # NOTE: FOR SINGLE AGENT BATCH
         """Returns a batch of oriented angle differences from the direction."""
         difference_batch = others_pos_batch - torch.unsqueeze(own_pos_batch, dim=1)
         normalized_batch = torch.nn.functional.normalize(difference_batch, dim=2)
