@@ -149,7 +149,7 @@ def plot_states_and_rews(env, num_steps, batch_ind, agent_ind):
         distances_to_second += [obs.others_distances[batch_ind, agent_ind, 1].item()]
         rewards += [rew[batch_ind, agent_ind].item()]
 
-    fig, axs = plt.subplots(4, 2)
+    fig, axs = plt.subplots(4, 2, figsize=(10, 10))
     axs[0, 0].plot(target_angles)
     axs[0, 0].set_title('Angle to target')
     axs[0, 1].plot(target_distances)
@@ -166,6 +166,7 @@ def plot_states_and_rews(env, num_steps, batch_ind, agent_ind):
     axs[3, 0].set_title('Angle to agent {}'.format(second))
     axs[3, 1].plot(distances_to_second)
     axs[3, 1].set_title('Distance to agent {}'.format(second))
+    fig.tight_layout(pad=5.0)
 
     for ax in axs.flat:
         ax.set(xlabel='step number', ylabel='value')
