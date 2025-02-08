@@ -139,17 +139,17 @@ def plot_states_and_rews(env, num_steps, batch_ind, agent_ind):
     for i in range(num_steps):
         actions = env.sample_actions()
         obs, rew, _, _, _ = env.step(actions)
-        target_angles += [obs.target_angle[batch_ind, agent_ind,:].value]
-        target_distances += [obs.target_distances[batch_ind, agent_ind,:].value]
-        all_obs_angels += [obs.obstacles_angles[batch_ind, agent_ind,:].value]
-        all_obs_distances += [obs.obstacles_distances[batch_ind, agent_ind,:].value]
-        angles_to_first += [obs.others_angles[batch_ind, first,:].value]
-        distances_to_first += [obs.others_distances[batch_ind, first,:].value]
-        angles_to_second += [obs.others_angles[batch_ind, second,:].value]
-        distances_to_second += [obs.others_distances[batch_ind, second,:].value]
-        rewards += [rew[batch_ind, second,:].value]
+        target_angles += [obs.target_angle[batch_ind, agent_ind,0].item()]
+        target_distances += [obs.target_distance[batch_ind, agent_ind,0].item()]
+        all_obs_angels += [obs.obstacles_angles[batch_ind, agent_ind,0].item()]
+        all_obs_distances += [obs.obstacles_distances[batch_ind, agent_ind,0].item()]
+        angles_to_first += [obs.others_angles[batch_ind, agent_ind, 0].item()]
+        distances_to_first += [obs.others_distances[batch_ind, agent_ind, 0].item()]
+        angles_to_second += [obs.others_angles[batch_ind, agent_ind, 1].item()]
+        distances_to_second += [obs.others_distances[batch_ind, agent_ind, 1].item()]
+        rewards += [rew[batch_ind, agent_ind].item()]
 
-    fig, axs = plt.subplots(8, 2)
+    fig, axs = plt.subplots(4, 2)
     axs[0, 0].plot(target_angles)
     axs[0, 0].set_title('Angle to target')
     axs[0, 1].plot(target_distances)
@@ -174,8 +174,9 @@ def plot_states_and_rews(env, num_steps, batch_ind, agent_ind):
         batch_ind, agent_ind))
     save_plot(fig, 'states.png', 'plots')
 
-    fig, ax = plt.plot(rewards)
+    fig, ax = plt.subplots(1, 1)
     ax.set(xlabel='step number', ylabel='value')
+    ax.plot(rewards)
     fig.suptitle('Rewards, batch index: {0}, agent index: {1}'.format(
         batch_ind, agent_ind))
     save_plot(fig, 'rewards.png', 'plots')

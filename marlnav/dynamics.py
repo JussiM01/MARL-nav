@@ -29,8 +29,10 @@ class DynamicsModel(object):
         self.target = target
 
         # Counters for truncation and termination
-        self._step_num = torch.ones([self.batch_size])
-        self._steps_left = (self.max_step -1)*torch.ones([self.batch_size])
+        self._step_num = torch.ones([self.batch_size]).to(self.device)
+        self._steps_left = (self.max_step -1)*torch.ones([self.batch_size]).to(
+            self.device)
+        self._terminated = torch.zeros([self.batch_size]).to(self.device)
 
         # Reward weight factors
         self._collision_factor = 50.
@@ -52,25 +54,33 @@ class DynamicsModel(object):
         """Resets the agents' and env states, returns observations and info."""
         states, obstacles, target = random_states(self.init)
 
-        self.states = states
-        self.obstacles = obstacles
-        self.target = target
-        self._step_num = 1
+        self.states = self._terminated_update(self.states, states)
+        self.obstacles = self._terminated_update(self.obstacles, obstacles)
+        self.target = self._terminated_update(self.target, target)
+        self._step_num = self._terminated_update(
+            self._step_num, torch.ones([self.batch_size]).to(self.device))
 
         return self._obsevations(), self.params
+
+
+    def _terminated_update(self, old_vars, new_vars):
+
+        return (1 - self._terminated) * old_vars + self._terminated * new_vars
+
 
     def step(self, actions):
         """Updates the states and returns observations, rewards, terminated,
         truncated and info tensors."""
         self._move_agents(actions)
-        self._step_num += 1  # NOTE: CHANGE THIS
+        self._step_num += torch.ones([self.batch_size]).to(self.device)
         truncated = torch.tensor(
             (self._step_num < self.max_step)).repeat(self.batch_size) # NOTE: CHANGE THIS
         observations = self._observations()
-        rewards, terminated = self._rews_and_terms(observations)
+        rewards, terminated = self._rews_and_terms(observations) # NOTE: DO RESET AFTER THIS?
 
-        return (torch.cat(observations, dim=2), rewards, terminated, truncated,
-                self.params)
+        # return (torch.cat(observations, dim=2), rewards, terminated, truncated,
+        #         self.params)
+        return observations, rewards, terminated, truncated, self.params # NOTE: CAT OBSERVATIONS LATER & ADD INFO PARAMS
 
     def sample_actions(self):
         """Samples an action batch."""
@@ -151,9 +161,10 @@ class DynamicsModel(object):
 
         collisions = torch.clamp(obstacle_collisions + agent_collisions, max=1)
         all_in_target, _ = torch.min(in_target_area, dim=1)
-
-        self._steps_left -= torch.where(all_in_target > 0, 1, 0) # NOTE: FIX THIS! (DIMS DON'T MATCH)
-        terminated = torch.where(self._steps_left == 0, True, False)
+        self._steps_left -= torch.squeeze(
+            torch.where(all_in_target > 0, 1, 0), dim=1)
+        terminated = (self._steps_left == 0)
+        self._terminated = torch.where(terminated, 1, 0)
 
         coll_loss = self._collision_factor * collisions
         distance_rew = self._distance_factor * distance_scores
