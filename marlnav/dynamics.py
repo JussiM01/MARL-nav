@@ -73,8 +73,7 @@ class DynamicsModel(object):
         truncated and info tensors."""
         self._move_agents(actions)
         self._step_num += torch.ones([self.batch_size]).to(self.device)
-        truncated = torch.tensor(
-            (self._step_num < self.max_step)).repeat(self.batch_size) # NOTE: CHANGE THIS
+        truncated = (self._step_num < self.max_step)
         observations = self._observations()
         rewards, terminated = self._rews_and_terms(observations) # NOTE: DO RESET AFTER THIS?
 
