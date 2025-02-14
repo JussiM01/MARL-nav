@@ -173,11 +173,13 @@ def plot_states_and_rews(env, num_steps, batch_ind, agent_ind):
 
     fig.suptitle('States, batch index: {0}, agent index: {1}'.format(
         batch_ind, agent_ind))
-    save_plot(fig, 'states.png', 'plots')
+    save_plot(fig, 'states_batch_{0}_agent_{1}.png'.format(
+        batch_ind, agent_ind), 'plots')
 
     fig, ax = plt.subplots(1, 1)
     ax.set(xlabel='step number', ylabel='value')
     ax.plot(rewards)
     fig.suptitle('Rewards, batch index: {0}, agent index: {1}'.format(
         batch_ind, agent_ind))
-    save_plot(fig, 'rewards.png', 'plots')
+    save_plot(fig, 'rewards_{0}_agent_{1}.png'.format(
+        batch_ind, agent_ind), 'plots')
