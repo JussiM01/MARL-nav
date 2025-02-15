@@ -206,7 +206,8 @@ class DynamicsModel(object):
         """Returns a batch of oriented angle differences from the direction."""
         difference_batch = others_pos_batch - torch.unsqueeze(own_pos_batch, dim=1)
         normalized_batch = torch.nn.functional.normalize(difference_batch, dim=2)
-        dot_batch = torch.einsum('bj,bij->bi', direction_batch, normalized_batch)
+        dot_batch = torch.clamp(torch.einsum('bj,bij->bi', direction_batch,
+            normalized_batch), -1 + 1e-8, 1 - 1e-8)
         dir_projections = torch.einsum('bi,bj->bij', dot_batch, direction_batch)
         orthogonal_comps = normalized_batch - dir_projections
         signs = torch.where(orthogonal_comps[:,:,0] > 0, -1., 1.)
