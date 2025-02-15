@@ -65,7 +65,7 @@ if __name__ == '__main__':
         help='number of enviroments in the batch')
     parser.add_argument('-na', '--num_agents', type=int, default=3,
         help='number of agents in a single environment')
-    parser.add_argument('-no', '--num_obstacles', type=int, default=10,
+    parser.add_argument('-no', '--num_obstacles', type=int, default=1, # NOTE: DEFAULT=1 FOR TESTING, change this later?
         help='number of obstacles in a single environment')
     parser.add_argument('-ms', '--max_step', type=int, default=100, # NOTE: DEFAULT=100 FOR TESTING, change this later?
         help='maximum number of time steps in the simulation')
