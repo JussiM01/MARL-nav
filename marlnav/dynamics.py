@@ -48,6 +48,7 @@ class DynamicsModel(object):
         self._max_at_prop_d = 2 # NOTE: IS THIS NEEDED ?
         self._max_angle_diff = math.pi/8
         self._target_radius = 25.
+        self._cap_distance = 0.1
 
 
     def reset(self): # NOTE: REFACTOR THIS!
@@ -138,6 +139,13 @@ class DynamicsModel(object):
         #                          AND BELOW VELOCITY DIFFERENCES? (if the speeds are made dynamic))
 
         # others_speeds = ... # NOTE: ADD THESE LATER, ONLY IF THEY ARE MADE DYNAMIC
+
+        target_angle = torch.where(
+            target_distance < self._cap_distance, 0., target_angle)
+        obstacles_angles = torch.where(
+            obstacles_distances < self._cap_distance, 0., obstacles_angles)
+        others_angles = torch.where(
+            others_distances < self._cap_distance, 0., others_angles)
 
         return Observations(target_angle, target_distance, obstacles_angles,
             obstacles_distances, others_angles, others_distances)
