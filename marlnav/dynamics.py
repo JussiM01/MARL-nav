@@ -35,10 +35,10 @@ class DynamicsModel(object):
         self._terminated = torch.zeros([self.batch_size]).to(self.device)
 
         # Reward weight factors
-        self._collision_factor = 50.
-        self._distance_factor = 5.
-        self._heading_factor = 10.
-        self._target_factor = 500.
+        self._collision_factor = params['collision_factor']
+        self._distance_factor = params['distance_factor']
+        self._heading_factor = params['heading_factor']
+        self._target_factor = params['target_factor']
 
         # Geometric attributes
         self._ob_coll_dist = 10.
