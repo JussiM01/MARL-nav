@@ -16,6 +16,7 @@ class DynamicsModel(object):
         self.num_agents = params['num_agents']
         self.num_obstacles = params['num_obstacles'] # NOTE: ADD THIS TO main.py (args & params)
         self.max_step = params['max_step']
+        self.episode_len = params['episode_len']
         self.init = params['init']
         self._sampler = action_sampler(params['sampler'])
         self._others_inds = torch.tensor(
@@ -30,8 +31,8 @@ class DynamicsModel(object):
 
         # Counters for truncation and termination
         self._step_num = torch.ones([self.batch_size]).to(self.device)
-        self._steps_left = (self.max_step -1)*torch.ones([self.batch_size]).to(
-            self.device)
+        self._steps_left = (self.episode_len -1)*torch.ones(
+            [self.batch_size]).to(self.device)
         self._terminated = torch.zeros([self.batch_size]).to(self.device)
 
         # Reward weight factors
@@ -74,7 +75,7 @@ class DynamicsModel(object):
         truncated and info tensors."""
         self._move_agents(actions)
         self._step_num += torch.ones([self.batch_size]).to(self.device)
-        truncated = (self._step_num < self.max_step)
+        truncated = (self._step_num < self.episode_len)
         observations = self._observations()
         rewards, terminated = self._rews_and_terms(observations) # NOTE: DO RESET AFTER THIS?
 

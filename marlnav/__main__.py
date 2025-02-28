@@ -69,6 +69,8 @@ if __name__ == '__main__':
         help='number of obstacles in a single environment')
     parser.add_argument('-ms', '--max_step', type=int, default=100, # NOTE: DEFAULT=100 FOR TESTING, change this later?
         help='maximum number of time steps in the simulation')
+    parser.add_argument('-el', '--episode_len', type=int, default=100, # NOTE: DEFAULT=100 FOR TESTING, change this later?
+        help='maximum number od steps in an episode')
     parser.add_argument('-cf', '--collision_factor', type=float, default=50., # NOTE: CHANGE THIS LATER?
         help='Weight factor for the collision loss.')
     parser.add_argument('-df', '--distance_factor', type=float, default=5., # NOTE: CHANGE THIS LATER?
@@ -204,6 +206,7 @@ if __name__ == '__main__':
             'x_bound': args.max_x_value,
             'y_bound': args.max_y_value,
             'max_step': args.max_step,
+            'episode_len': args.episode_len,
             'collision_factor': args.collision_factor,
             'distance_factor': args.distance_factor,
             'heading_factor': args.heading_factor,
