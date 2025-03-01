@@ -139,6 +139,12 @@ def plot_states_and_rews(env, num_steps, batch_ind, agent_ind):
     for i in range(num_steps):
         actions = env.sample_actions()
         obs, rew, _, _, _ = env.step(actions)
+        # print('OBSTACLES DISTANCES: ', obs.obstacles_distances[batch_ind,:,:])
+        # print('OTHERS DISTANCES: ', obs.others_distances[batch_ind,:,:])
+        # print('TARGET DISTANCE: ', obs.target_distance[batch_ind,:,:])
+        # print('TARGET ANGLE: ', obs.target_angle[batch_ind,:,:])
+        # print('REWARDS: ', rew[batch_ind,:])
+        # print('\n')
         target_angles += [obs.target_angle[batch_ind, agent_ind,0].item()]
         target_distances += [obs.target_distance[batch_ind, agent_ind,0].item()]
         all_obs_angels += [obs.obstacles_angles[batch_ind, agent_ind,0].item()]
