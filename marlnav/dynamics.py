@@ -78,6 +78,8 @@ class DynamicsModel(object):
         truncated = (self._step_num < self.episode_len)
         observations = self._observations()
         rewards, terminated = self._rews_and_terms(observations) # NOTE: DO RESET AFTER THIS?
+        # NOTE: SHOULD A COMBINATION OF BOTH terminated & truncated BE USED FOR THE UPDATE?
+        # NOTE: self._step_num SHOULD BE UPDATED AT THE RESET (terminated & truncated batch indeces set to zero)
 
         # return (torch.cat(observations, dim=2), rewards, terminated, truncated,
         #         self.params)
@@ -168,10 +170,13 @@ class DynamicsModel(object):
             observations.target_angle, self._max_angle_diff)
 
         collisions = torch.clamp(obstacle_collisions + agent_collisions, max=1)
+        atleast_1_coll, _ = torch.max(collisions, dim=1)
         all_in_target, _ = torch.min(in_target_area, dim=1)
-        self._steps_left -= torch.squeeze(
-            torch.where(all_in_target > 0, 1, 0), dim=1)
-        terminated = (self._steps_left == 0)
+        all_in_target = torch.squeeze(all_in_target)
+
+        terminated = all_in_target > 0 # NOTE: TEST THIS FIRST
+        # terminated = atleast_1_coll > 0 # NOTE: TEST THEN THIS
+        # terminated = (atleast_1_coll + all_in_target > 0) # NOTE: AND THEN THIS, WHICH IS THE RIGHT ONE TO USE
         self._terminated = torch.where(terminated, 1, 0)
 
         coll_loss = self._collision_factor * collisions
