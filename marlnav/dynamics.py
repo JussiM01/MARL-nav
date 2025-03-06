@@ -23,7 +23,7 @@ class DynamicsModel(object):
             [[i for i in range(self.num_agents) if i != j]
               for j in range(self.num_agents)]).to(self.device) # NOTE: [[]] if self.num_agents == 1
 
-        states, obstacles, target = random_states(self.init) # NOTE: REFACTOR THIS (and reset)!
+        states, obstacles, target = random_states(self.init) # NOTE: REFACTOR THIS (and _reinit)!
 
         self.states = states
         self.obstacles = obstacles
@@ -33,7 +33,7 @@ class DynamicsModel(object):
         self._step_num = torch.ones([self.batch_size]).to(self.device)
         self._steps_left = (self.episode_len -1)*torch.ones(
             [self.batch_size]).to(self.device)
-        self._terminated = torch.zeros([self.batch_size]).to(self.device)
+        self._reinit_mask = torch.zeros([self.batch_size]).to(self.device)
 
         # Reward weight factors
         self._collision_factor = params['collision_factor']
@@ -51,35 +51,40 @@ class DynamicsModel(object):
         self._target_radius = 25.
         self._cap_distance = 0.1
 
-
-    def reset(self): # NOTE: REFACTOR THIS!
+    def reset(self):
         """Resets the agents' and env states, returns observations and info."""
-        states, obstacles, target = random_states(self.init)
-
-        self.states = self._terminated_update(self.states, states)
-        self.obstacles = self._terminated_update(self.obstacles, obstacles)
-        self.target = self._terminated_update(self.target, target)
-        self._step_num = self._terminated_update(
-            self._step_num, torch.ones([self.batch_size]).to(self.device))
+        self._reinit_mask = torch.ones([self.batch_size]).to(self.device)
 
         return self._obsevations(), self.params
 
+    def _reinit(self):
+        """Reinits the env's for terminated and truncated indeces."""
+        states, obstacles, target = random_states(self.init)
 
-    def _terminated_update(self, old_vars, new_vars):
+        self.states = self._reinit_update(self.states, states)
+        self.obstacles = self._reinit_update(self.obstacles, obstacles)
+        self.target = self._reinit_update(self.target, target)
+        self._step_num = self._reinit_update(
+            self._step_num, torch.zeros([self.batch_size]).to(self.device))
 
-        return (1 - self._terminated) * old_vars + self._terminated * new_vars
+    def _reinit_update(self, old_vars, new_vars):
+        """Changes new values based on reinit_mask rows (1 new, 0 old)."""
 
+        return (torch.einsum('b,b...->b...', (1 - self._reinit_mask), old_vars)
+            + torch.einsum('b,b...->b...', self._reinit_mask, new_vars))
 
     def step(self, actions):
         """Updates the states and returns observations, rewards, terminated,
         truncated and info tensors."""
         self._move_agents(actions)
         self._step_num += torch.ones([self.batch_size]).to(self.device)
-        truncated = (self._step_num < self.episode_len)
+        print(self._step_num) # NOTE: FOR TESTING: REMOVE WHEN READY!
+        truncated = (self._step_num > self.episode_len -1)
         observations = self._observations()
-        rewards, terminated = self._rews_and_terms(observations) # NOTE: DO RESET AFTER THIS?
-        # NOTE: SHOULD A COMBINATION OF BOTH terminated & truncated BE USED FOR THE UPDATE?
-        # NOTE: self._step_num SHOULD BE UPDATED AT THE RESET (terminated & truncated batch indeces set to zero)
+        rewards, terminated = self._rews_and_terms(observations)
+        is_finished = torch.logical_or(truncated, terminated)
+        self._reinit_mask = torch.where(is_finished, 1, 0)
+        self._reinit()
 
         # return (torch.cat(observations, dim=2), rewards, terminated, truncated,
         #         self.params)
@@ -172,12 +177,10 @@ class DynamicsModel(object):
         collisions = torch.clamp(obstacle_collisions + agent_collisions, max=1)
         atleast_1_coll, _ = torch.max(collisions, dim=1)
         all_in_target, _ = torch.min(in_target_area, dim=1)
-        all_in_target = torch.squeeze(all_in_target)
 
-        terminated = all_in_target > 0 # NOTE: TEST THIS FIRST
+        # terminated = torch.squeeze(all_in_target) > 0 # NOTE: TEST THIS FIRST
         # terminated = atleast_1_coll > 0 # NOTE: TEST THEN THIS
-        # terminated = (atleast_1_coll + all_in_target > 0) # NOTE: AND THEN THIS, WHICH IS THE RIGHT ONE TO USE
-        self._terminated = torch.where(terminated, 1, 0)
+        terminated = (atleast_1_coll + torch.squeeze(all_in_target) > 0) # THIS SHOULD BE USED FINALLY!
 
         coll_loss = self._collision_factor * collisions
         distance_rew = self._distance_factor * distance_scores
