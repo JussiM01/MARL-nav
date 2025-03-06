@@ -30,9 +30,7 @@ class DynamicsModel(object):
         self.target = target
 
         # Counters for truncation and termination
-        self._step_num = torch.ones([self.batch_size]).to(self.device)
-        self._steps_left = (self.episode_len -1)*torch.ones(
-            [self.batch_size]).to(self.device)
+        self._step_num = torch.zeros([self.batch_size]).to(self.device)
         self._reinit_mask = torch.zeros([self.batch_size]).to(self.device)
 
         # Reward weight factors
@@ -78,7 +76,6 @@ class DynamicsModel(object):
         truncated and info tensors."""
         self._move_agents(actions)
         self._step_num += torch.ones([self.batch_size]).to(self.device)
-        print(self._step_num) # NOTE: FOR TESTING: REMOVE WHEN READY!
         truncated = (self._step_num > self.episode_len -1)
         observations = self._observations()
         rewards, terminated = self._rews_and_terms(observations)
