@@ -109,7 +109,7 @@ if __name__ == '__main__':
                 ]],
             'mock_obstacles': [
                 [
-                [750., 475.]
+                [900., 475.]
                 ], # NOTE: only one obstacle per batch (for now)
                 [
                 [750., 75.]
@@ -119,7 +119,7 @@ if __name__ == '__main__':
                 [750., 675.]
                 ],
                 [
-                [1050, 75.]
+                [750., 475.]
                 ]],
             'device': device,
         },
@@ -135,6 +135,50 @@ if __name__ == '__main__':
         }
     }
     ############################################################################
+
+# ### NOTE: This section should be temporary or refactored to a JSON-file ####
+#     mock_params = {
+#         'init': {
+#             'init_method': 'mock_init',
+#             'mock_states': [
+#                 [
+#                 [750. -300./math.sqrt(3), 375., 0., 1., 3./math.sin(math.pi/3)],
+#                 [750., 375., 0., 1., 3.],
+#                 [750. +300./math.sqrt(3), 375., 0., 1., 3./math.sin(math.pi/3)]
+#                 ],
+#                 [
+#                 [450, 675., 1., 0., 2*300.*math.sin(math.radians(0.9))],
+#                 [750., 675., 0., -1., 6.],
+#                 [1050., 675., -1., 0., 2*300.*math.sin(math.radians(0.9))]
+#                 ]],
+#             'mock_obstacles': [
+#                 [
+#                 [750., 475.]
+#                 ], # NOTE: only one obstacle per batch (for now)
+#                 [
+#                 [750., 75.]
+#                 ]],
+#             'mock_target': [
+#                 [
+#                 [750., 675.]
+#                 ],
+#                 [
+#                 [1050, 75.]
+#                 ]],
+#             'device': device,
+#         },
+#         'sampler': {
+#             'sample_method': 'mock_sampler',
+#             'angles':
+#                 [
+#                 [0., 0., 0.],
+#                 [-math.radians(1.8), 0., math.radians(1.8)]
+#                 ],
+#             'device': device,
+#             'max_step': args.max_step,
+#         }
+#     }
+#     ############################################################################
 
     # ### NOTE: This section should be temporary or refactored to a JSON-file ####
     # mock_params = {
