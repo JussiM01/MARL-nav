@@ -143,7 +143,8 @@ def plot_states_and_rews(env, num_steps, batch_ind, agent_ind):
         # print('OTHERS DISTANCES: ', obs.others_distances[batch_ind,:,:])
         # print('TARGET DISTANCE: ', obs.target_distance[batch_ind,:,:])
         # print('TARGET ANGLE: ', obs.target_angle[batch_ind,:,:])
-        # print('REWARDS: ', rew[batch_ind,:])
+        # print('REWARDS: ', rew[batch_ind])
+        # # print('REWARDS: ', rew[batch_ind,:]) # NOTE: USE THIS FOR DEBUGGING/TESTING NEW REWARDS
         # print('\n')
         target_angles += [obs.target_angle[batch_ind, agent_ind,0].item()]
         target_distances += [obs.target_distance[batch_ind, agent_ind,0].item()]
@@ -153,7 +154,8 @@ def plot_states_and_rews(env, num_steps, batch_ind, agent_ind):
         distances_to_first += [obs.others_distances[batch_ind, agent_ind, 0].item()]
         angles_to_second += [obs.others_angles[batch_ind, agent_ind, 1].item()]
         distances_to_second += [obs.others_distances[batch_ind, agent_ind, 1].item()]
-        rewards += [rew[batch_ind, agent_ind].item()]
+        rewards += [rew[batch_ind].item()]
+        # rewards += [rew[batch_ind, agent_ind].item()] # NOTE: USE THIS FOR DEBUGGING/TESTING NEW REWARDS
 
     pi_plus = 3.5
     fig, axs = plt.subplots(4, 2, figsize=(10, 10))

@@ -186,7 +186,8 @@ class DynamicsModel(object):
             size=(self.batch_size, self.num_agents))
         reward = target_rew + heading_rew + distance_rew -coll_loss
 
-        return reward, terminated
+        return torch.mean(reward, dim=1), terminated
+        # return reward, terminated # NOTE: USE THIS FOR DEBUGGING/TESTING NEW REWARDS
 
     def _collision_loss(self, distances, collision_dist): # INPUT SHAPE: (batch_size, num_agents, ...)
         """Returns a tensor of ones (collisions) and zeros (no collisions)."""

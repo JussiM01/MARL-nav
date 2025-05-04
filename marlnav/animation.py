@@ -41,7 +41,8 @@ class Animation:
         # print('OTHERS DISTANCES: ', obs.others_distances[self.batch_index,:,:])
         # print('TARGET DISTANCE: ', obs.target_distance[self.batch_index,:,:])
         # print('TARGET ANGLE: ', obs.target_angle[self.batch_index,:,:])
-        # print('REWARDS: ', rew[self.batch_index,:])
+        # print('REWARDS: ', rew[self.batch_index])
+        # # print('REWARDS: ', rew[batch_ind,:]) # NOTE: USE THIS FOR DEBUGGING/TESTING NEW REWARDS
         # print('\n')
         updated_agents_pos = self.model.states[self.batch_index,:,:2]
         self.agents_scatter.set_offsets(updated_agents_pos.cpu().numpy())
