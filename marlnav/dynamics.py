@@ -38,6 +38,7 @@ class DynamicsModel(object):
         self._distance_factor = params['distance_factor']
         self._heading_factor = params['heading_factor']
         self._target_factor = params['target_factor']
+        self._soft_factor = params['soft_factor']
 
         # Geometric attributes
         self._ob_coll_dist = 10.
@@ -170,6 +171,7 @@ class DynamicsModel(object):
             self._agents_max_d, self._max_at_prop_d) # NOTE: DOES THE METHOD REALLY NEED THE LAST PARAMETER ?
         heading_scores = self._heading_reward(
             observations.target_angle, self._max_angle_diff)
+        soft_score = self._soft_reward(observations.target_distances)
 
         collisions = torch.clamp(obstacle_collisions + agent_collisions, max=1)
         atleast_1_coll, _ = torch.max(collisions, dim=1)
@@ -184,7 +186,8 @@ class DynamicsModel(object):
         heading_rew = self._heading_factor * heading_scores
         target_rew = self._target_factor * all_in_target.expand(
             size=(self.batch_size, self.num_agents))
-        reward = target_rew + heading_rew + distance_rew -coll_loss
+        soft_rew = self._soft_factor *
+        reward = target_rew + heading_rew + distance_rew + soft_rew -coll_loss
 
         return torch.mean(reward, dim=1), terminated
         # return reward, terminated # NOTE: USE THIS FOR DEBUGGING/TESTING NEW REWARDS
@@ -211,6 +214,11 @@ class DynamicsModel(object):
         abs_diffs = torch.squeeze(torch.abs(heading_diffs), dim=2)
 
         return torch.where(abs_diffs < max_angle_diff, 1., 0.)
+
+    def _soft_reward(self, distances_to_target):
+        """Returns smooth 1/(1+distances**2) reward for closeness to target."""
+
+        return torch.squeeze(1/(1 + distances_to_target**2), dim=2)
 
     def _get_distances(self, own_pos_batch, others_pos_batch): # NOTE: FOR SINGLE AGENT BATCH
         """Returns batch of distances between own and others positions."""

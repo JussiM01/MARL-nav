@@ -79,6 +79,8 @@ if __name__ == '__main__':
         help='Weight factor for the heading reward.')
     parser.add_argument('-tf', '--target_factor', type=float, default=500., # NOTE: CHANGE THIS LATER?
         help='Weight factor for the target reward.')
+    parser.add_argument('-sf', '--soft_factor', type=float, default=100., # NOTE: CHANGE THIS LATER?
+        help='Weight factor for the smooth target distance reward.')
 
     # init args
     parser.add_argument('-re', '--rendering', action='store_true',
