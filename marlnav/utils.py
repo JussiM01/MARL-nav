@@ -202,5 +202,6 @@ def plot_states_and_rews(env, num_steps, batch_ind, agent_ind):
         batch_ind, agent_ind)
         + '\n Factors: tar {0}, hea {1}'.format(tar_fac, hea_fac)
         + ', dis {0}, col {1}, sof {2}'.format(dis_fac, col_fac, sof_fac))
-    save_plot(fig, 'rewards_B{0}A{1}T{2}H{3}D{4}C{5}.png'.format(
-        batch_ind, agent_ind, tar_fac, hea_fac, dis_fac, col_fac), 'plots')
+    save_plot(fig, 'rewards_B{0}A{1}T{2}H{3}D{4}C{5}S{6}.png'.format(
+        batch_ind, agent_ind, tar_fac, hea_fac, dis_fac, col_fac, sof_fac),
+        'plots')

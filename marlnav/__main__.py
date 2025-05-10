@@ -257,6 +257,7 @@ if __name__ == '__main__':
             'distance_factor': args.distance_factor,
             'heading_factor': args.heading_factor,
             'target_factor': args.target_factor,
+            'soft_factor': args.soft_factor,
             'sampler': mock_params['sampler'],
             'init': mock_params['init'],
         },
