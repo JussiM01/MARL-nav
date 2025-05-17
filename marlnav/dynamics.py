@@ -96,8 +96,8 @@ class DynamicsModel(object):
         """Moves the agents' positions according to actions."""
         self._rotate_directions(actions)
         directions = self.states[:,:,2:4]
-        velocities = self.states[:,:,4:5]
-        self.states[:,:,:2] += directions * velocities
+        speeds = self.states[:,:,4:5]
+        self.states[:,:,:2] += directions * speeds
 
     def _rotate_directions(self, actions):
         """Rotates the directions of the whole states batch."""
