@@ -30,7 +30,7 @@ class DynamicsModel(object):
         self.target = target
 
         self.min_speed = params['min_speed']
-        self.max_speed = params['max_speed']        
+        self.max_speed = params['max_speed']
         self.min_accel = params['min_accel']
         self.max_accel = params['max_accel']
 
@@ -99,16 +99,19 @@ class DynamicsModel(object):
 
     def _move_agents(self, actions):
         """Moves the agents' positions according to actions."""
-        self._rotate_directions(actions)
+        self._rotate_directions(actions[:,:,0])
         directions = self.states[:,:,2:4]
-        speeds = self.states[:,:,4:5]
+        accelerations = torch.clamp(
+            actions[:,:,:-1], min=self.min_accel, max=self.max_accel)
+        speeds = torch.clamp(self.states[:,:,4:5] + accelerations,
+            min=self.min_speed, max=self.max_speed)
         self.states[:,:,:2] += directions * speeds
 
-    def _rotate_directions(self, actions):
+    def _rotate_directions(self, angles):
         """Rotates the directions of the whole states batch."""
         directions = self.states[:,:,2:4]
         self.states[:,:,2:4] = torch.vmap(torch.vmap(
-            self._rotate))(directions, actions)
+            self._rotate))(directions, angles)
 
     def _rotate(self, direction_vector, angle):
         """Rotates the agent's direction by the given angle."""
