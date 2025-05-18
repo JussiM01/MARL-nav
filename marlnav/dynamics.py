@@ -102,9 +102,10 @@ class DynamicsModel(object):
         self._rotate_directions(actions[:,:,0])
         directions = self.states[:,:,2:4]
         accelerations = torch.clamp(
-            actions[:,:,:-1], min=self.min_accel, max=self.max_accel)
+            actions[:,:,-1:], min=self.min_accel, max=self.max_accel)
         speeds = torch.clamp(self.states[:,:,4:5] + accelerations,
             min=self.min_speed, max=self.max_speed)
+        self.states[:,:,4:5] = speeds
         self.states[:,:,:2] += directions * speeds
 
     def _rotate_directions(self, angles):

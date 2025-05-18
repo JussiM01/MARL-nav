@@ -73,11 +73,11 @@ if __name__ == '__main__':
         help='maximum number od steps in an episode')
     parser.add_argument('-mis', '--min_speed', type=float, default=0.,
         help='Minimum cut-off value for the speed.')
-    parser.add_argument('-mas', '--max_speed', type=float, default=5., # NOTE: CHANGE THIS LATER?
+    parser.add_argument('-mas', '--max_speed', type=float, default=10., # NOTE: CHANGE THIS LATER?
         help='Maximum cut-off value for the speed.')
-    parser.add_argument('-mia', '--min_accel', type=float, default=-0.1, # NOTE: CHANGE THIS LATER?
+    parser.add_argument('-mia', '--min_accel', type=float, default=-0.5, # NOTE: CHANGE THIS LATER?
         help='Minimum cut-off value for the acceleration.')
-    parser.add_argument('-maa', '--max_accel', type=float, default=0.1, # NOTE: CHANGE THIS LATER?
+    parser.add_argument('-maa', '--max_accel', type=float, default=0.5, # NOTE: CHANGE THIS LATER?
         help='Maximum cut-off value for the acceleration.')
     parser.add_argument('-cf', '--collision_factor', type=float, default=50., # NOTE: CHANGE THIS LATER?
         help='Weight factor for the collision loss.')
@@ -102,34 +102,34 @@ if __name__ == '__main__':
 
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
-### NOTE: This section should be temporary or refactored to a JSON-file ####
-    mock_params = {
+    ### NOTE: This section should be temporary or refactored to a JSON-file ####
+    mock_params = { # NOTE: THIS ONE IS FOR ACCELERATION TESTING
         'init': {
             'init_method': 'mock_init',
             'mock_states': [
                 [
-                [750. -300./math.sqrt(3), 375., 0., 1., 3./math.sin(math.pi/3)],
-                [750., 375., 0., 1., 3.],
-                [750. +300./math.sqrt(3), 375., 0., 1., 3./math.sin(math.pi/3)]
+                [550., 100., 0., 1., 0.],
+                [750., 100., 0., 1., 0.],
+                [950., 100., 0., 1., 5.]
                 ],
                 [
-                [450, 675., 1., 0., 2*300.*math.sin(math.radians(0.9))],
-                [750., 675., 0., -1., 6.],
-                [1050., 675., -1., 0., 2*300.*math.sin(math.radians(0.9))]
+                [550., 100., 0., 1., 0.],
+                [750., 100., 0., 1., 0.],
+                [950., 100., 0., 1., 5.]
                 ]],
             'mock_obstacles': [
                 [
-                [900., 475.]
-                ], # NOTE: only one obstacle per batch (for now)
-                [
-                [750., 75.]
-                ]],
-            'mock_target': [
-                [
-                [750., 675.]
+                [1400., 375.],
                 ],
                 [
-                [750., 475.]
+                [1400., 375.],
+                ]], # NOTE: only one obstacle per batch (for now)
+            'mock_target': [
+                [
+                [1400., 700.],
+                ],
+                [
+                [1400., 700.],
                 ]],
             'device': device,
         },
@@ -137,16 +137,61 @@ if __name__ == '__main__':
             'sample_method': 'mock_sampler',
             'angles':
                 [
-                # [0., 0., 0.],
-                # [-math.radians(1.8), 0., math.radians(1.8)]
-                [[0.,0.], [0., 0.], [0., 0.]],
-                [[-math.radians(1.8), 0.], [0., 0.], [math.radians(1.8), 0.]]
+                [[0., 5.], [0., 0.1], [0., -0.05]],
+                [[0., 5.], [0., 0.1], [0., -100.]]
                 ],
             'device': device,
             'max_step': args.max_step,
+            # 'max_step': 50,
         }
     }
     ############################################################################
+
+# ### NOTE: This section should be temporary or refactored to a JSON-file ####
+#     mock_params = { # NOTE: THIS ONE IS FOR REWRD TESTING
+#         'init': {
+#             'init_method': 'mock_init',
+#             'mock_states': [
+#                 [
+#                 [750. -300./math.sqrt(3), 375., 0., 1., 3./math.sin(math.pi/3)],
+#                 [750., 375., 0., 1., 3.],
+#                 [750. +300./math.sqrt(3), 375., 0., 1., 3./math.sin(math.pi/3)]
+#                 ],
+#                 [
+#                 [450, 675., 1., 0., 2*300.*math.sin(math.radians(0.9))],
+#                 [750., 675., 0., -1., 6.],
+#                 [1050., 675., -1., 0., 2*300.*math.sin(math.radians(0.9))]
+#                 ]],
+#             'mock_obstacles': [
+#                 [
+#                 [900., 475.]
+#                 ], # NOTE: only one obstacle per batch (for now)
+#                 [
+#                 [750., 75.]
+#                 ]],
+#             'mock_target': [
+#                 [
+#                 [750., 675.]
+#                 ],
+#                 [
+#                 [750., 475.]
+#                 ]],
+#             'device': device,
+#         },
+#         'sampler': {
+#             'sample_method': 'mock_sampler',
+#             'angles':
+#                 [
+#                 # [0., 0., 0.],
+#                 # [-math.radians(1.8), 0., math.radians(1.8)]
+#                 [[0.,0.], [0., 0.], [0., 0.]],
+#                 [[-math.radians(1.8), 0.], [0., 0.], [math.radians(1.8), 0.]]
+#                 ],
+#             'device': device,
+#             'max_step': args.max_step,
+#         }
+#     }
+#     ############################################################################
 
 # ### NOTE: This section should be temporary or refactored to a JSON-file ####
 #     mock_params = {

@@ -29,8 +29,7 @@ def random_states(params):
     else:
         raise NotImplementedError
 
-
-class MockSampler(object):
+class MockSampler(object):  # NOTE: THIS ONE IS FOR ACCELERATION TESTING
     """Mock sampler for testing the dynamics model and its visualization."""
 
     def __init__(self, params):
@@ -38,24 +37,42 @@ class MockSampler(object):
         angles1 = params['angles'][1]
 
         (angle00, angle01, angle02) = params['angles'][0]
-        (angle10, angle11, angle12,) = params['angles'][1]
+        (angle10, angle11, angle12) = params['angles'][1]
         device = params['device']
 
-        self._angle00 = ([-math.pi/6, 0.] if i == 0 else angle00
-            for i in range(params['max_step']))
-        self._angle02 = ([math.pi/6, 0.] if i == 0 else angle02
-            for i in range(params['max_step']))
-        angle1_half = [
-            [0.5*angle10[0], 0.],[0.5*angle11[0], 0.],[0.5*angle12[0], 0.]]
-        self._angles1 = (
-            angle1_half if i == 0. else [angle10, angle11, angle12]
-            for i in range(params['max_step']))
-        self.angle_batch = (torch.tensor([[next(self._angle00), angle01,
-            next(self._angle02)], next(self._angles1)]).to(device)
+        self.angle_batch = (torch.tensor([[angle00, angle01, angle02],
+            [angle10, angle11, angle12]]).to(device)
             for i in range(params['max_step']))
 
     def __call__(self):
         return next(self.angle_batch)
+
+# class MockSampler(object):  # NOTE: THIS ONE IS FOR REWRD TESTING
+#     """Mock sampler for testing the dynamics model and its visualization."""
+#
+#     def __init__(self, params):
+#         angles0 = params['angles'][0]
+#         angles1 = params['angles'][1]
+#
+#         (angle00, angle01, angle02) = params['angles'][0]
+#         (angle10, angle11, angle12,) = params['angles'][1]
+#         device = params['device']
+#
+#         self._angle00 = ([-math.pi/6, 0.] if i == 0 else angle00
+#             for i in range(params['max_step']))
+#         self._angle02 = ([math.pi/6, 0.] if i == 0 else angle02
+#             for i in range(params['max_step']))
+#         angle1_half = [
+#             [0.5*angle10[0], 0.],[0.5*angle11[0], 0.],[0.5*angle12[0], 0.]]
+#         self._angles1 = (
+#             angle1_half if i == 0. else [angle10, angle11, angle12]
+#             for i in range(params['max_step']))
+#         self.angle_batch = (torch.tensor([[next(self._angle00), angle01,
+#             next(self._angle02)], next(self._angles1)]).to(device)
+#             for i in range(params['max_step']))
+#
+#     def __call__(self):
+#         return next(self.angle_batch)
 
 # class MockSampler(object):
 #     """Mock sampler for testing the dynamics model and its visualization."""
