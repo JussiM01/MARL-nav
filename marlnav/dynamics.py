@@ -29,6 +29,11 @@ class DynamicsModel(object):
         self.obstacles = obstacles
         self.target = target
 
+        self.min_speed = params['min_speed']
+        self.max_speed = params['max_speed']        
+        self.min_accel = params['min_accel']
+        self.max_accel = params['max_accel']
+
         # Counters for truncation and termination
         self._step_num = torch.zeros([self.batch_size]).to(self.device)
         self._reinit_mask = torch.zeros([self.batch_size]).to(self.device)

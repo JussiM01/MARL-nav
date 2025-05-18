@@ -71,6 +71,14 @@ if __name__ == '__main__':
         help='maximum number of time steps in the simulation')
     parser.add_argument('-el', '--episode_len', type=int, default=100, # NOTE: DEFAULT=100 FOR TESTING, change this later?
         help='maximum number od steps in an episode')
+    parser.add_argument('-mis', '--min_speed', type=float, default=0.,
+        help='Minimum cut-off value for the speed.')
+    parser.add_argument('-mas', '--max_speed', type=float, default=5., # NOTE: CHANGE THIS LATER?
+        help='Maximum cut-off value for the speed.')
+    parser.add_argument('-mia', '--min_accel', type=float, default=-0.1, # NOTE: CHANGE THIS LATER?
+        help='Minimum cut-off value for the acceleration.')
+    parser.add_argument('-maa', '--max_accel', type=float, default=0.1, # NOTE: CHANGE THIS LATER?
+        help='Maximum cut-off value for the acceleration.')
     parser.add_argument('-cf', '--collision_factor', type=float, default=50., # NOTE: CHANGE THIS LATER?
         help='Weight factor for the collision loss.')
     parser.add_argument('-df', '--distance_factor', type=float, default=5., # NOTE: CHANGE THIS LATER?
@@ -253,6 +261,10 @@ if __name__ == '__main__':
             'y_bound': args.max_y_value,
             'max_step': args.max_step,
             'episode_len': args.episode_len,
+            'min_speed': args.min_speed,
+            'max_speed': args.max_speed,
+            'min_accel': args.min_accel,
+            'max_accel': args.max_accel,
             'collision_factor': args.collision_factor,
             'distance_factor': args.distance_factor,
             'heading_factor': args.heading_factor,
