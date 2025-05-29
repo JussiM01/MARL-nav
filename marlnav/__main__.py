@@ -95,105 +95,110 @@ if __name__ == '__main__':
         help='rendering option (no training), action: store_true' )
     parser.add_argument('-sa', '--sampling_style', type=str, default='sampler', # NOTE: FOR TESTING
         help='sampling style, should be either `policy` or `sampler`') # REMOVE THIS LATER ?
+
     parser.add_argument('-pl', '--plot_saving', action='store_true', # NOTE: FOR DEBUGGING/TESTING ONLY!
         help='Run test for states and rewards and save plots') # REMOVE THIS LATER ?
-
+    parser.add_argument('-sn', '--sampler_num', type=int, default=0, # NOTE: FOR DEBUGGING/TESTING ONLY!
+        help='number code of the chosen mock_params and mock_smapler') # REMOVE THIS LATER ?
     args = parser.parse_args()
 
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
     ### NOTE: This section should be temporary or refactored to a JSON-file ####
-    mock_params = { # NOTE: THIS ONE IS FOR ACCELERATION TESTING
-        'init': {
-            'init_method': 'mock_init',
-            'mock_states': [
-                [
-                [550., 100., 0., 1., 0.],
-                [750., 100., 0., 1., 0.],
-                [950., 100., 0., 1., 5.]
-                ],
-                [
-                [550., 100., 0., 1., 0.],
-                [750., 100., 0., 1., 0.],
-                [950., 100., 0., 1., 5.]
-                ]],
-            'mock_obstacles': [
-                [
-                [1400., 375.],
-                ],
-                [
-                [1400., 375.],
-                ]], # NOTE: only one obstacle per batch (for now)
-            'mock_target': [
-                [
-                [1400., 700.],
-                ],
-                [
-                [1400., 700.],
-                ]],
-            'device': device,
-        },
-        'sampler': {
-            'sample_method': 'mock_sampler',
-            'angles':
-                [
-                [[0., 5.], [0., 0.1], [0., -0.05]],
-                [[0., 5.], [0., 0.1], [0., -100.]]
-                ],
-            'device': device,
-            'max_step': args.max_step,
-            # 'max_step': 50,
+    if args.sampler_num == 0:
+        mock_params = { # NOTE: THIS ONE IS FOR ACCELERATION TESTING
+            'init': {
+                'init_method': 'mock_init',
+                'mock_states': [
+                    [
+                    [550., 100., 0., 1., 0.],
+                    [750., 100., 0., 1., 0.],
+                    [950., 100., 0., 1., 5.]
+                    ],
+                    [
+                    [550., 100., 0., 1., 0.],
+                    [750., 100., 0., 1., 0.],
+                    [950., 100., 0., 1., 5.]
+                    ]],
+                'mock_obstacles': [
+                    [
+                    [1400., 375.],
+                    ],
+                    [
+                    [1400., 375.],
+                    ]], # NOTE: only one obstacle per batch (for now)
+                'mock_target': [
+                    [
+                    [1400., 700.],
+                    ],
+                    [
+                    [1400., 700.],
+                    ]],
+                'device': device,
+            },
+            'sampler': {
+                'sampler_num': 0,
+                'sample_method': 'mock_sampler',
+                'actions':
+                    [
+                    [[0., 5.], [0., 0.1], [0., -0.05]],
+                    [[0., 5.], [0., 0.1], [0., -100.]]
+                    ],
+                'device': device,
+                'max_step': args.max_step,
+                # 'max_step': 50,
+            }
         }
-    }
-    ############################################################################
 
-# ### NOTE: This section should be temporary or refactored to a JSON-file ####
-#     mock_params = { # NOTE: THIS ONE IS FOR REWRD TESTING
-#         'init': {
-#             'init_method': 'mock_init',
-#             'mock_states': [
-#                 [
-#                 [750. -300./math.sqrt(3), 375., 0., 1., 3./math.sin(math.pi/3)],
-#                 [750., 375., 0., 1., 3.],
-#                 [750. +300./math.sqrt(3), 375., 0., 1., 3./math.sin(math.pi/3)]
-#                 ],
-#                 [
-#                 [450, 675., 1., 0., 2*300.*math.sin(math.radians(0.9))],
-#                 [750., 675., 0., -1., 6.],
-#                 [1050., 675., -1., 0., 2*300.*math.sin(math.radians(0.9))]
-#                 ]],
-#             'mock_obstacles': [
-#                 [
-#                 [900., 475.]
-#                 ], # NOTE: only one obstacle per batch (for now)
-#                 [
-#                 [750., 75.]
-#                 ]],
-#             'mock_target': [
-#                 [
-#                 [750., 675.]
-#                 ],
-#                 [
-#                 [750., 475.]
-#                 ]],
-#             'device': device,
-#         },
-#         'sampler': {
-#             'sample_method': 'mock_sampler',
-#             'angles':
-#                 [
-#                 # [0., 0., 0.],
-#                 # [-math.radians(1.8), 0., math.radians(1.8)]
-#                 [[0.,0.], [0., 0.], [0., 0.]],
-#                 [[-math.radians(1.8), 0.], [0., 0.], [math.radians(1.8), 0.]]
-#                 ],
-#             'device': device,
-#             'max_step': args.max_step,
-#         }
-#     }
-#     ############################################################################
+    elif args.sampler_num == 1:
+        mock_params = { # NOTE: THIS ONE IS FOR REWARD TESTING
+            'init': {
+                'init_method': 'mock_init',
+                'mock_states': [
+                    [
+                    [750. -300./math.sqrt(3), 375., 0., 1., 3./math.sin(math.pi/3)],
+                    [750., 375., 0., 1., 3.],
+                    [750. +300./math.sqrt(3), 375., 0., 1., 3./math.sin(math.pi/3)]
+                    ],
+                    [
+                    [450, 675., 1., 0., 2*300.*math.sin(math.radians(0.9))],
+                    [750., 675., 0., -1., 6.],
+                    [1050., 675., -1., 0., 2*300.*math.sin(math.radians(0.9))]
+                    ]],
+                'mock_obstacles': [
+                    [
+                    [900., 475.]
+                    ], # NOTE: only one obstacle per batch (for now)
+                    [
+                    [750., 75.]
+                    ]],
+                'mock_target': [
+                    [
+                    [750., 675.]
+                    ],
+                    [
+                    [750., 475.]
+                    ]],
+                'device': device,
+            },
+            'sampler': {
+                'sampler_num': 1,
+                'sample_method': 'mock_sampler',
+                'actions':
+                    [
+                    # [0., 0., 0.],
+                    # [-math.radians(1.8), 0., math.radians(1.8)]
+                    [[0.,0.], [0., 0.], [0., 0.]],
+                    [[-math.radians(1.8), 0.], [0., 0.], [math.radians(1.8), 0.]]
+                    ],
+                'device': device,
+                'max_step': args.max_step,
+            }
+        }
 
-# ### NOTE: This section should be temporary or refactored to a JSON-file ####
+    else:
+        raise NotImplementedError
+
 #     mock_params = {
 #         'init': {
 #             'init_method': 'mock_init',
@@ -226,7 +231,7 @@ if __name__ == '__main__':
 #         },
 #         'sampler': {
 #             'sample_method': 'mock_sampler',
-#             'angles':
+#             'actions':
 #                 [
 #                 [0., 0., 0.],
 #                 [-math.radians(1.8), 0., math.radians(1.8)]
@@ -270,7 +275,7 @@ if __name__ == '__main__':
     #     },
     #     'sampler': {
     #         'sample_method': 'mock_sampler',
-    #         'angles':
+    #         'actions':
     #             [
     #             [0., 0., 0.],
     #             [-math.radians(1.8), -math.radians(1.8), -math.radians(1.8)]
