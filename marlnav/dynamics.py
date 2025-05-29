@@ -36,6 +36,7 @@ class DynamicsModel(object):
 
         # Counters for truncation and termination
         self._step_num = torch.zeros([self.batch_size]).to(self.device)
+        self._terminates = torch.tensor(self.batch_size*[False]).to(self.device)
         self._reinit_mask = torch.zeros([self.batch_size]).to(self.device)
 
         # Reward weight factors
@@ -87,6 +88,7 @@ class DynamicsModel(object):
         truncated = (self._step_num > self.episode_len -1)
         observations = self._observations()
         rewards, terminated = self._rews_and_terms(observations)
+
         is_finished = torch.logical_or(truncated, terminated)
         self._reinit_mask = torch.where(is_finished, 1, 0)
         self._reinit()
@@ -193,9 +195,13 @@ class DynamicsModel(object):
         atleast_1_coll, _ = torch.max(collisions, dim=1)
         all_in_target, _ = torch.min(in_target_area, dim=1)
 
-        # terminated = torch.squeeze(all_in_target) > 0 # NOTE: TEST THIS FIRST
-        # terminated = atleast_1_coll > 0 # NOTE: TEST THEN THIS
-        terminated = (atleast_1_coll + torch.squeeze(all_in_target) > 0) # THIS SHOULD BE USED FINALLY!
+        terminated = atleast_1_coll > 0
+        terminated = torch.logical_or(terminated, self._terminates)
+
+        # Set envs where agents have reached the target to terminate in the next
+        # step (since cummulative reward will be zeroed at the terminal step)
+        to_terminate = torch.squeeze(all_in_target) > 0
+        self._terminates = to_terminate
 
         risk_loss = self._risk_factor * risks
         distance_rew = self._distance_factor * distance_scores
