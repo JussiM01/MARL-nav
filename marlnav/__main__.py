@@ -146,7 +146,6 @@ if __name__ == '__main__':
                     ],
                 'device': device,
                 'max_step': args.max_step,
-                # 'max_step': 50,
             }
         }
 
@@ -186,8 +185,6 @@ if __name__ == '__main__':
                 'sample_method': 'mock_sampler',
                 'actions':
                     [
-                    # [0., 0., 0.],
-                    # [-math.radians(1.8), 0., math.radians(1.8)]
                     [[0.,0.], [0., 0.], [0., 0.]],
                     [[-math.radians(1.8), 0.], [0., 0.], [math.radians(1.8), 0.]]
                     ],
