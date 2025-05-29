@@ -79,8 +79,8 @@ if __name__ == '__main__':
         help='Minimum cut-off value for the acceleration.')
     parser.add_argument('-maa', '--max_accel', type=float, default=0.5, # NOTE: CHANGE THIS LATER?
         help='Maximum cut-off value for the acceleration.')
-    parser.add_argument('-cf', '--collision_factor', type=float, default=50., # NOTE: CHANGE THIS LATER?
-        help='Weight factor for the collision loss.')
+    parser.add_argument('-rf', '--risk_factor', type=float, default=50., # NOTE: CHANGE THIS LATER?
+        help='Weight factor for the risk loss.')
     parser.add_argument('-df', '--distance_factor', type=float, default=5., # NOTE: CHANGE THIS LATER?
         help='Weight factor for the distance reward.')
     parser.add_argument('-hf', '--heading_factor', type=float, default=10., # NOTE: CHANGE THIS LATER?
@@ -312,7 +312,7 @@ if __name__ == '__main__':
             'max_speed': args.max_speed,
             'min_accel': args.min_accel,
             'max_accel': args.max_accel,
-            'collision_factor': args.collision_factor,
+            'risk_factor': args.risk_factor,
             'distance_factor': args.distance_factor,
             'heading_factor': args.heading_factor,
             'target_factor': args.target_factor,

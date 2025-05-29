@@ -39,17 +39,19 @@ class DynamicsModel(object):
         self._reinit_mask = torch.zeros([self.batch_size]).to(self.device)
 
         # Reward weight factors
-        self._collision_factor = params['collision_factor']
+        self._risk_factor = params['risk_factor']
         self._distance_factor = params['distance_factor']
         self._heading_factor = params['heading_factor']
         self._target_factor = params['target_factor']
         self._soft_factor = params['soft_factor']
 
         # Geometric attributes
+        self._ob_risk_dist = 20.
+        self._ag_risk_dist = 10.
         self._ob_coll_dist = 10.
         self._ag_coll_dist = 5.
-        self._agents_min_d = 10.
-        self._agents_max_d = 25.
+        self._agents_min_d = 15.
+        self._agents_max_d = 30.
         self._max_at_prop_d = 2 # NOTE: IS THIS NEEDED ?
         self._max_angle_diff = math.pi/8
         self._target_radius = 25.
@@ -169,9 +171,13 @@ class DynamicsModel(object):
 
     def _rews_and_terms(self, observations): # NOTE: REFACTOR TO USE HELPER METHODS
 
-        obstacle_collisions = self._collision_loss(
+        obstacle_risks = self._in_area_detect(
+            observations.obstacles_distances, self._ob_risk_dist)
+        agent_risks = self._in_area_detect(
+            observations.others_distances, self._ag_risk_dist)
+        obstacle_collisions = self._in_area_detect(
             observations.obstacles_distances, self._ob_coll_dist)
-        agent_collisions = self._collision_loss(
+        agent_collisions = self._in_area_detect(
             observations.others_distances, self._ag_coll_dist)
         in_target_area = torch.where(
             observations.target_distance < self._target_radius, 1., 0.)
@@ -182,6 +188,7 @@ class DynamicsModel(object):
             observations.target_angle, self._max_angle_diff)
         soft_score = self._soft_reward(observations.target_distance)
 
+        risks = torch.clamp(obstacle_risks + agent_risks, max=1)
         collisions = torch.clamp(obstacle_collisions + agent_collisions, max=1)
         atleast_1_coll, _ = torch.max(collisions, dim=1)
         all_in_target, _ = torch.min(in_target_area, dim=1)
@@ -190,21 +197,21 @@ class DynamicsModel(object):
         # terminated = atleast_1_coll > 0 # NOTE: TEST THEN THIS
         terminated = (atleast_1_coll + torch.squeeze(all_in_target) > 0) # THIS SHOULD BE USED FINALLY!
 
-        coll_loss = self._collision_factor * collisions
+        risk_loss = self._risk_factor * risks
         distance_rew = self._distance_factor * distance_scores
         heading_rew = self._heading_factor * heading_scores
         target_rew = self._target_factor * all_in_target.expand(
             size=(self.batch_size, self.num_agents))
         soft_rew = self._soft_factor * soft_score
-        reward = target_rew + heading_rew + distance_rew + soft_rew -coll_loss
+        reward = target_rew + heading_rew + distance_rew + soft_rew -risk_loss
 
         return torch.mean(reward, dim=1), terminated
         # return reward, terminated # NOTE: USE THIS FOR DEBUGGING/TESTING NEW REWARDS
 
-    def _collision_loss(self, distances, collision_dist): # INPUT SHAPE: (batch_size, num_agents, ...)
-        """Returns a tensor of ones (collisions) and zeros (no collisions)."""
-        collisions = torch.where(distances < collision_dist, 1., 0.) # ... = num_objects or (num_agents-1)
-        detections, _ = torch.max(collisions, dim=2)
+    def _in_area_detect(self, distances, radius): # INPUT SHAPE: (batch_size, num_agents, ...)
+        """Returns a tensor of ones (in area) and zeros (outside)."""
+        detections = torch.where(distances < radius, 1., 0.) # ... = num_objects or (num_agents-1)
+        detections, _ = torch.max(detections, dim=2)
 
         return detections
 

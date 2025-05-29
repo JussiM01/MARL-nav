@@ -214,7 +214,7 @@ def plot_states_and_rews(env, num_steps, batch_ind, agent_ind):
     tar_fac = env._target_factor
     hea_fac = env._heading_factor
     dis_fac = env._distance_factor
-    col_fac = env._collision_factor
+    ris_fac = env._risk_factor
     sof_fac = env._soft_factor
 
     fig, ax = plt.subplots(1, 1)
@@ -223,7 +223,7 @@ def plot_states_and_rews(env, num_steps, batch_ind, agent_ind):
     fig.suptitle('Rewards, batch index: {0}, agent index: {1}'.format(
         batch_ind, agent_ind)
         + '\n Factors: tar {0}, hea {1}'.format(tar_fac, hea_fac)
-        + ', dis {0}, col {1}, sof {2}'.format(dis_fac, col_fac, sof_fac))
-    save_plot(fig, 'rewards_B{0}A{1}T{2}H{3}D{4}C{5}S{6}.png'.format(
-        batch_ind, agent_ind, tar_fac, hea_fac, dis_fac, col_fac, sof_fac),
+        + ', dis {0}, ris {1}, sof {2}'.format(dis_fac, ris_fac, sof_fac))
+    save_plot(fig, 'rewards_B{0}A{1}T{2}H{3}D{4}R{5}S{6}.png'.format(
+        batch_ind, agent_ind, tar_fac, hea_fac, dis_fac, ris_fac, sof_fac),
         'plots')
