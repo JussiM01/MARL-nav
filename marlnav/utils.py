@@ -40,6 +40,7 @@ class TriangleIntitializer(object):
         self.tar_pos_y = params['tar_pos_y']
         self.num_obs = params['num_obs']
 
+        self.noisy_ags = int(params['noisy_ags'])
         self.ags_std = params['ags_std']
         self.angle_range = params['angle_range']
         self.obs_min_x = params['obst_min_x']
@@ -87,8 +88,8 @@ class TriangleIntitializer(object):
     def _sample_agents(self):
         pos_noise = self.pos_noise.sample((self.batch_size, 3))
         angles = self.angle_range * (torch.rand(self.batch_size, 3) - 0.5)
-        rotated_dirs = self._rotate(self.ags_dir, angles)
-        positions = self.ags_pos + pos_noise
+        rotated_dirs = self._rotate(self.ags_dir, self.noisy_ags * angles)
+        positions = self.ags_pos + self.noisy_ags * pos_noise
         states = torch.cat([positions, rotated_dirs, self.speeds], dim=2)
 
         return states
