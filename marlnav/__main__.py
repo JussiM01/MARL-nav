@@ -99,14 +99,46 @@ if __name__ == '__main__':
     parser.add_argument('-pl', '--plot_saving', action='store_true', # NOTE: FOR DEBUGGING/TESTING ONLY!
         help='Run test for states and rewards and save plots') # REMOVE THIS LATER ?
     parser.add_argument('-sn', '--sampler_num', type=int, default=0, # NOTE: FOR DEBUGGING/TESTING ONLY!
-        help='number code of the chosen mock_params and mock_smapler') # REMOVE THIS LATER ?
+        help='number code of the chosen params and mock_sampler') # REMOVE THIS LATER ?
     args = parser.parse_args()
 
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
     ### NOTE: This section should be temporary or refactored to a JSON-file ####
-    if args.sampler_num == 0:
-        mock_params = { # NOTE: THIS ONE IS FOR ACCELERATION TESTING
+    if args.sampler_num == -1:
+
+        # if args.num_agents != 3:
+        #     raise ValueError
+        #
+        # params = { # NOTE: THIS ONE IS FOR TESTING TRIANGLE INITIALIZATION
+        #     'init': {
+        #         'init_method': 'triangle',
+        #         'device': device,
+        #         'batch_size': args.batch_size,
+        #         'ags_cent_x':,
+        #         'ags_cent_y':,
+        #         'ags_dist':,
+        #         'tar_pos_x:',
+        #         'tar_pos_y:',
+        #         'num_obs':,
+        #         'noisy_ags': False, # TESTING FIRST THE STATIC AGENT STATES CASE
+        #         'ags_std':,
+        #         'angle_range':,
+        #         'obst_min_x':,
+        #         'obst_max_x':,
+        #         'obst_min_y':,
+        #         'obst_max_y':,
+        #     'sampler': {
+        #         'sample_method': 'const_sampler', # TESTING FIRST THE CONSTANT ACTIONS CASE
+        #         'device': device,
+        #         'batch_size': args.batch_size,
+        #         'num_agents': args.num_agents,
+        #     }
+        # }
+        raise NotImplementedError
+
+    elif args.sampler_num == 0:
+        params = { # NOTE: THIS ONE IS FOR ACCELERATION TESTING
             'init': {
                 'init_method': 'mock_init',
                 'mock_states': [
@@ -150,7 +182,7 @@ if __name__ == '__main__':
         }
 
     elif args.sampler_num == 1:
-        mock_params = { # NOTE: THIS ONE IS FOR REWARD TESTING
+        params = { # NOTE: THIS ONE IS FOR REWARD TESTING
             'init': {
                 'init_method': 'mock_init',
                 'mock_states': [
@@ -196,7 +228,7 @@ if __name__ == '__main__':
     else:
         raise NotImplementedError
 
-#     mock_params = {
+#     params = {
 #         'init': {
 #             'init_method': 'mock_init',
 #             'mock_states': [
@@ -240,7 +272,7 @@ if __name__ == '__main__':
 #     ############################################################################
 
     # ### NOTE: This section should be temporary or refactored to a JSON-file ####
-    # mock_params = {
+    # params = {
     #     'init': {
     #         'init_method': 'mock_init',
     #         'mock_states': [
@@ -319,8 +351,8 @@ if __name__ == '__main__':
             'heading_factor': args.heading_factor,
             'target_factor': args.target_factor,
             'soft_factor': args.soft_factor,
-            'sampler': mock_params['sampler'],
-            'init': mock_params['init'],
+            'sampler': params['sampler'],
+            'init': params['init'],
         },
     }
 

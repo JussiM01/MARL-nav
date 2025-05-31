@@ -31,7 +31,7 @@ class TriangleIntitializer(object):
 
     def __init__(self, params):
         self.device = params['device']
-        self.form_type = params['form_type']
+        self.init_method = params['init_method']
         self.batch_size = params['batch_size']
         self.ags_cent_x = params['ags_cent_x']
         self.ags_cent_y = params['ags_cent_y']
@@ -119,7 +119,7 @@ def init_sampler(params):
     """Initializes random states of the environment."""
     if params['init_method'] == 'mock_init':
         return MockInitializer(params)
-    elif params['form_type'] == 'triangle':
+    elif params['init_method'] == 'triangle':
         return TriangleIntitializer(params)
 
 
