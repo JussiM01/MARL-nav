@@ -6,6 +6,7 @@ import os
 import torch
 
 from collections import namedtuple
+from torch.distributions import MultivariateNormal
 
 
 Observations = namedtuple('Observations', ['target_angle', 'target_distance',
@@ -13,21 +14,113 @@ Observations = namedtuple('Observations', ['target_angle', 'target_distance',
     'others_distances'])
 
 
-def mock_init(params):
-    """Mock intialization for testing."""
-    states = torch.tensor(params['mock_states']).to(params['device'])
-    obstacles = torch.tensor(params['mock_obstacles']).to(params['device'])
-    target = torch.tensor(params['mock_target']).to(params['device'])
+class MockInitializer(object):
+    """Mock intializer for testing."""
+    def __init__(self, params):
+        self.states = torch.tensor(params['mock_states']).to(params['device'])
+        self.obstacles = torch.tensor(
+            params['mock_obstacles']).to(params['device'])
+        self.target = torch.tensor(params['mock_target']).to(params['device'])
 
-    return states, obstacles, target
+    def __call__(self):
+        return self.states, self.obstacles, self.target
 
 
-def random_states(params):
+class TriangleIntitializer(object):
+    """Intial state sampler for three agents and the environment."""
+
+    def __init__(self, params):
+        self.device = params['device']
+        self.form_type = params['form_type']
+        self.batch_size = params['batch_size']
+        self.ags_cent_x = params['ags_cent_x']
+        self.ags_cent_y = params['ags_cent_y']
+        self.ags_dist = params['ags_dist']
+        self.tar_pos_x = params['tar_pos_x']
+        self.tar_pos_y = params['tar_pos_y']
+        self.num_obs = params['num_obs']
+
+        self.ags_std = params['ags_std']
+        self.angle_range = params['angle_range']
+        self.obs_min_x = params['obst_min_x']
+        self.obs_max_x = params['obst_max_x']
+        self.obs_min_y = params['obst_min_y']
+        self.obs_max_y = params['obst_max_y']
+
+        self._obs_x_range = self.obs_max_x - self.obs_min_x
+        self._obs_y_range = self.obs_max_y - self.obs_min_y
+        self._obs_mean_x = 0.5 * (self.obs_min_x + self.obs_max_x)
+        self._obs_mean_y = 0.5 * (self.obs_min_y + self.obs_max_y)
+
+        pos_const = 0.5 * self.ags_dist
+        ags_pos = pos_const * torch.tensor(
+            [[-1/math.sqrt(3), 1.], [2/math.sqrt(3), 0.],[-1/math.sqrt(3), -1.]]
+            ).to(self.device)
+        mean_pos = torch.unsqueeze(
+            torch.tensor([self.ags_cent_x, self.ags_cent_y]).to(self.device),
+            dim=0).repeat(3,1)
+        ags_pos = ags_pos + mean_pos
+        ags_dir = torch.tensor([[1., 0.], [1., 0.], [1., 0.]]).to(self.device)
+
+        self.ags_pos = torch.unsqueeze(
+            ags_pos, dim=0).repeat(self.batch_size, 1, 1)
+        self.ags_dir = torch.unsqueeze(
+            ags_dir, dim=0).repeat(self.batch_size, 1, 1)
+        target = torch.unsqueeze(torch.tensor(
+            [self.tar_pos_x, self.tar_pos_y]).to(self.device), dim=0)
+        self.target = torch.unsqueeze(
+            target, dim=0).repeat(self.batch_size, 3, 1)
+        self.speeds = torch.zeros([self.batch_size, 3, 1]).to(
+            self.device)
+
+        sigma = torch.diag(torch.tensor([self.ags_std, self.ags_std])).to(
+            self.device)
+        self.pos_noise = MultivariateNormal(torch.zeros(2).to(
+            self.device), sigma)
+
+    def __call__(self):
+        states = self._sample_agents()
+        obstacles = self._sample_obstacles()
+
+        return states, obstacles, self.target
+
+    def _sample_agents(self):
+        pos_noise = self.pos_noise.sample((self.batch_size, 3))
+        angles = self.angle_range * (torch.rand(self.batch_size, 3) - 0.5)
+        rotated_dirs = self._rotate(self.ags_dir, angles)
+        positions = self.ags_pos + pos_noise
+        states = torch.cat([positions, rotated_dirs, self.speeds], dim=2)
+
+        return states
+
+    def _sample_obstacles(self):
+        scaled_pos_x = self._obs_x_range * (
+            torch.rand(self.batch_size, self.num_obs, 1) - 0.5)
+        scaled_pos_y = self._obs_y_range * (
+            torch.rand(self.batch_size, self.num_obs, 1) - 0.5)
+        obs_pos_x = scaled_pos_x + self._obs_mean_x
+        obs_pos_y = scaled_pos_y + self._obs_mean_y
+
+        return torch.cat([obs_pos_x, obs_pos_y], dim=2)
+
+    def _rotate(self, directions, angles):
+        return torch.vmap(torch.vmap(self._rotate_one))(directions, angles)
+
+    def _rotate_one(self, direction_vector, angle):
+        rotation_matrix = torch.stack([
+            torch.stack([torch.cos(angle), -torch.sin(angle)]),
+            torch.stack([torch.sin(angle), torch.cos(angle)])]).to(self.device)
+
+        return torch.matmul(rotation_matrix, direction_vector)
+
+
+def init_sampler(params):
     """Initializes random states of the environment."""
     if params['init_method'] == 'mock_init':
-        return mock_init(params)
-    else:
-        raise NotImplementedError
+        return MockInitializer(params)
+    elif params['form_type'] == 'triangle':
+        return TriangleIntitializer(params)
+
 
 class MockSampler(object):  # NOTE: THIS ONE IS FOR ACCELERATION TESTING
     """Mock sampler for testing the dynamics model and its visualization."""
@@ -87,11 +180,23 @@ class MockSampler(object):  # NOTE: THIS ONE IS FOR ACCELERATION TESTING
 #     def __call__(self):
 #         return next(self.action_batch)
 
+class ConstantSampler(object):
+    """Constant action sampler for testing."""
+
+    def __init__(self, params):
+        self.actions = torch.tensor([[params['num_agents']*[0., 1.]]
+            for i in range(params['batch_size'])]).to(params['device'])
+
+    def __call__(self):
+        return self.actions
+
 
 def action_sampler(params):
     """Samples a random action batch."""
     if params['sample_method'] == 'mock_sampler':
         return MockSampler(params)
+    elif params['sample_method'] =='const_sampler':
+        return ConstantSampler(params)
     else:
         raise NotImplementedError
 

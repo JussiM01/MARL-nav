@@ -2,7 +2,7 @@ import math
 import numpy
 import torch
 
-from marlnav.utils import random_states, action_sampler, Observations
+from marlnav.utils import init_sampler, action_sampler, Observations
 
 
 class DynamicsModel(object):
@@ -17,13 +17,13 @@ class DynamicsModel(object):
         self.num_obstacles = params['num_obstacles'] # NOTE: ADD THIS TO main.py (args & params)
         self.max_step = params['max_step']
         self.episode_len = params['episode_len']
-        self.init = params['init']
+        self._init_sampler = init_sampler(params['init'])
         self._sampler = action_sampler(params['sampler'])
         self._others_inds = torch.tensor(
             [[i for i in range(self.num_agents) if i != j]
               for j in range(self.num_agents)]).to(self.device) # NOTE: [[]] if self.num_agents == 1
 
-        states, obstacles, target = random_states(self.init) # NOTE: REFACTOR THIS (and _reinit)!
+        states, obstacles, target = self._init_sampler() # NOTE: REFACTOR THIS (and _reinit)!
 
         self.states = states
         self.obstacles = obstacles
@@ -66,7 +66,7 @@ class DynamicsModel(object):
 
     def _reinit(self):
         """Reinits the env's for terminated and truncated indeces."""
-        states, obstacles, target = random_states(self.init)
+        states, obstacles, target = self._init_sampler()
 
         self.states = self._reinit_update(self.states, states)
         self.obstacles = self._reinit_update(self.obstacles, obstacles)
