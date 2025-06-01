@@ -47,7 +47,10 @@ class Animation:
         updated_agents_pos = self.env.states[self.batch_index,:,:2]
         self.agents_scatter.set_offsets(updated_agents_pos.cpu().numpy())
 
-        return (self.agents_scatter,)
+        updated_obs_pos = self.env.obstacles[self.batch_index,:,:2]
+        self.obs_scatter.set_offsets(updated_obs_pos.cpu().numpy())
+
+        return (self.agents_scatter, self.obs_scatter)
 
     def run(self):
         """Runs the animation."""
