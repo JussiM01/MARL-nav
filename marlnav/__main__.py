@@ -5,21 +5,21 @@ import torch
 
 
 from marlnav.animation import Animation
-from marlnav.dynamics import DynamicsModel
+from marlnav.environment import Env
 from marlnav.utils import load_config, plot_states_and_rews # NOTE: LAST ONE IS FOR TESTING. REMOVE LATER ?
 
 
 def main(params, mode):
 
-    dynamics_model = DynamicsModel(params['model'])
+    env = Env(params['env'])
 
     if mode == 'rendering':
-        renderer = Animation(dynamics_model, params['animation'])
+        renderer = Animation(env, params['animation'])
         renderer.run()
 
     elif mode == 'plot_saving': # NOTE: FOR TESTING. REMOVE LATER ?
         plot_states_and_rews(
-            dynamics_model,
+            env,
             params['animation']['max_step'],
             params['animation']['batch_index'],
             params['animation']['agent_index']
@@ -28,7 +28,7 @@ def main(params, mode):
     elif mode == 'training':
         raise NotImplementedError
         # for i in range(params['num_steps']):
-        #     dynamics_model.update()
+        #     env.update()
 
 
 if __name__ == '__main__':
@@ -60,7 +60,7 @@ if __name__ == '__main__':
     parser.add_argument('-in', '--interval', type=int, default=10,
         help='interval param for the animation (small is fast).')
 
-    # model args
+    # env args
     parser.add_argument('-ba', '--batch_size', type=int, default=2, # NOTE: DEFAULT=2 FOR TESTING, change this later?
         help='number of enviroments in the batch')
     parser.add_argument('-na', '--num_agents', type=int, default=3,
@@ -334,7 +334,7 @@ if __name__ == '__main__':
             'max_step': args.max_step,
             'interval': args.interval,
         },
-        'model': {
+        'env': {
             'device': device,
             'batch_size': args.batch_size,
             'num_agents': args.num_agents,

@@ -5,7 +5,7 @@ import torch
 from marlnav.utils import init_sampler, action_sampler, Observations
 
 
-class DynamicsModel(object):
+class Env(object):
     """Batched model for the agents' states and the environment."""
 
     def __init__(self, params):

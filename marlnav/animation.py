@@ -9,13 +9,13 @@ from marlnav.utils import init_animation
 class Animation:
     """Animation of the agents' movements in the environment."""
 
-    def __init__(self, model, params):
+    def __init__(self, env, params):
 
-        self.model = model
+        self.env = env
         self.batch_index = params['batch_index']
-        agents_pos = model.states[self.batch_index,:,:2].cpu().numpy()
-        obs_pos = model.obstacles[self.batch_index,:,:].cpu().numpy()
-        target_pos = model.target[self.batch_index,:,:].cpu().numpy()
+        agents_pos = env.states[self.batch_index,:,:2].cpu().numpy()
+        obs_pos = env.obstacles[self.batch_index,:,:].cpu().numpy()
+        target_pos = env.target[self.batch_index,:,:].cpu().numpy()
         fig, agents_scatter, obs_scatter, target_scatter = init_animation(
             params, agents_pos, obs_pos, target_pos)
         fig.canvas.manager.set_window_title('MARL-nav')
@@ -32,11 +32,11 @@ class Animation:
         if self.sampling_style == 'policy':
             raise NotImplementedError
         elif self.sampling_style == 'sampler':
-            actions = self.model.sample_actions()
+            actions = self.env.sample_actions()
 
-        # self.model._move_agents(actions)
-        obs, rew, _, _, _ = self.model.step(actions)
-        # print('STEP_NUM: ', self.model._step_num[self.batch_index].item())
+        # self.env._move_agents(actions)
+        obs, rew, _, _, _ = self.env.step(actions)
+        # print('STEP_NUM: ', self.env._step_num[self.batch_index].item())
         # print('OBSTACLES DISTANCES: ', obs.obstacles_distances[self.batch_index,:,:])
         # print('OTHERS DISTANCES: ', obs.others_distances[self.batch_index,:,:])
         # print('TARGET DISTANCE: ', obs.target_distance[self.batch_index,:,:])
@@ -44,7 +44,7 @@ class Animation:
         # print('REWARDS: ', rew[self.batch_index])
         # # print('REWARDS: ', rew[batch_ind,:]) # NOTE: USE THIS FOR DEBUGGING/TESTING NEW REWARDS
         # print('\n')
-        updated_agents_pos = self.model.states[self.batch_index,:,:2]
+        updated_agents_pos = self.env.states[self.batch_index,:,:2]
         self.agents_scatter.set_offsets(updated_agents_pos.cpu().numpy())
 
         return (self.agents_scatter,)
