@@ -67,9 +67,9 @@ if __name__ == '__main__':
         help='number of agents in a single environment')
     parser.add_argument('-no', '--num_obstacles', type=int, default=1, # NOTE: DEFAULT=1 FOR TESTING, change this later?
         help='number of obstacles in a single environment')
-    parser.add_argument('-ms', '--max_step', type=int, default=100, # NOTE: DEFAULT=100 FOR TESTING, change this later?
+    parser.add_argument('-ms', '--max_step', type=int, default=1000, # NOTE: DEFAULT=100 FOR TESTING, change this later?
         help='maximum number of time steps in the simulation')
-    parser.add_argument('-el', '--episode_len', type=int, default=100, # NOTE: DEFAULT=100 FOR TESTING, change this later?
+    parser.add_argument('-el', '--episode_len', type=int, default=200, # NOTE: DEFAULT=100 FOR TESTING, change this later?
         help='maximum number od steps in an episode')
     parser.add_argument('-mis', '--min_speed', type=float, default=0.,
         help='Minimum cut-off value for the speed.')
@@ -107,35 +107,36 @@ if __name__ == '__main__':
     ### NOTE: This section should be temporary or refactored to a JSON-file ####
     if args.sampler_num == -1:
 
-        # if args.num_agents != 3:
-        #     raise ValueError
-        #
-        # params = { # NOTE: THIS ONE IS FOR TESTING TRIANGLE INITIALIZATION
-        #     'init': {
-        #         'init_method': 'triangle',
-        #         'device': device,
-        #         'batch_size': args.batch_size,
-        #         'ags_cent_x':,
-        #         'ags_cent_y':,
-        #         'ags_dist':,
-        #         'tar_pos_x:',
-        #         'tar_pos_y:',
-        #         'num_obs':,
-        #         'noisy_ags': False, # TESTING FIRST THE STATIC AGENT STATES CASE
-        #         'ags_std':,
-        #         'angle_range':,
-        #         'obst_min_x':,
-        #         'obst_max_x':,
-        #         'obst_min_y':,
-        #         'obst_max_y':,
-        #     'sampler': {
-        #         'sample_method': 'const_sampler', # TESTING FIRST THE CONSTANT ACTIONS CASE
-        #         'device': device,
-        #         'batch_size': args.batch_size,
-        #         'num_agents': args.num_agents,
-        #     }
-        # }
-        raise NotImplementedError
+        if args.num_agents != 3:
+            raise ValueError
+
+        params = { # NOTE: THIS ONE IS FOR TESTING TRIANGLE INITIALIZATION
+            'init': {
+                'init_method': 'triangle',
+                'device': device,
+                'batch_size': args.batch_size,
+                'ags_cent_x': 150.,
+                'ags_cent_y': 375.,
+                'ags_dist': 20.,
+                'tar_pos_x': 1350.,
+                'tar_pos_y': 375.,
+                'num_obs': 10,
+                'noisy_ags': False,
+                # 'noisy_ags': True, # TEST FIRST WITH THE STATIC AGENT STATES CASE
+                'ags_std': 0.01,
+                'angle_range': math.pi/6,
+                'obst_min_x': 300.,
+                'obst_max_x': 1200.,
+                'obst_min_y': 150.,
+                'obst_max_y': 600.
+                },
+            'sampler': {
+                'sample_method': 'const_sampler', # TESTING FIRST THE CONSTANT ACTIONS CASE
+                'device': device,
+                'batch_size': args.batch_size,
+                'num_agents': args.num_agents,
+            }
+        }
 
     elif args.sampler_num == 0:
         params = { # NOTE: THIS ONE IS FOR ACCELERATION TESTING

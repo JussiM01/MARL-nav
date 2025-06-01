@@ -70,7 +70,7 @@ class TriangleIntitializer(object):
         target = torch.unsqueeze(torch.tensor(
             [self.tar_pos_x, self.tar_pos_y]).to(self.device), dim=0)
         self.target = torch.unsqueeze(
-            target, dim=0).repeat(self.batch_size, 3, 1)
+            target, dim=0).repeat(self.batch_size, 1, 1)
         self.speeds = torch.zeros([self.batch_size, 3, 1]).to(
             self.device)
 
@@ -86,7 +86,7 @@ class TriangleIntitializer(object):
         return states, obstacles, self.target
 
     def _sample_agents(self):
-        pos_noise = self.pos_noise.sample((self.batch_size, 3))
+        pos_noise = self.ags_dist * self.pos_noise.sample((self.batch_size, 3))
         angles = self.angle_range * (torch.rand(self.batch_size, 3) - 0.5)
         rotated_dirs = self._rotate(self.ags_dir, self.noisy_ags * angles)
         positions = self.ags_pos + self.noisy_ags * pos_noise
@@ -102,7 +102,7 @@ class TriangleIntitializer(object):
         obs_pos_x = scaled_pos_x + self._obs_mean_x
         obs_pos_y = scaled_pos_y + self._obs_mean_y
 
-        return torch.cat([obs_pos_x, obs_pos_y], dim=2)
+        return torch.cat([obs_pos_x, obs_pos_y], dim=2).to(self.device)
 
     def _rotate(self, directions, angles):
         return torch.vmap(torch.vmap(self._rotate_one))(directions, angles)
@@ -185,7 +185,7 @@ class ConstantSampler(object):
     """Constant action sampler for testing."""
 
     def __init__(self, params):
-        self.actions = torch.tensor([[params['num_agents']*[0., 1.]]
+        self.actions = torch.tensor([params['num_agents']*[[0., 1.]]
             for i in range(params['batch_size'])]).to(params['device'])
 
     def __call__(self):
