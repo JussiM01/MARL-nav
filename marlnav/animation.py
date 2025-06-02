@@ -12,10 +12,10 @@ class Animation:
     def __init__(self, env, params):
 
         self.env = env
-        self.batch_index = params['batch_index']
-        agents_pos = env.states[self.batch_index,:,:2].cpu().numpy()
-        obs_pos = env.obstacles[self.batch_index,:,:].cpu().numpy()
-        target_pos = env.target[self.batch_index,:,:].cpu().numpy()
+        self.parallel_index = params['parallel_index']
+        agents_pos = env.states[self.parallel_index,:,:2].cpu().numpy()
+        obs_pos = env.obstacles[self.parallel_index,:,:].cpu().numpy()
+        target_pos = env.target[self.parallel_index,:,:].cpu().numpy()
         fig, agents_scatter, obs_scatter, target_scatter = init_animation(
             params, agents_pos, obs_pos, target_pos)
         fig.canvas.manager.set_window_title('MARL-nav')
@@ -36,18 +36,18 @@ class Animation:
 
         # self.env._move_agents(actions)
         obs, rew, _, _, _ = self.env.step(actions)
-        # print('STEP_NUM: ', self.env._step_num[self.batch_index].item())
-        # print('OBSTACLES DISTANCES: ', obs.obstacles_distances[self.batch_index,:,:])
-        # print('OTHERS DISTANCES: ', obs.others_distances[self.batch_index,:,:])
-        # print('TARGET DISTANCE: ', obs.target_distance[self.batch_index,:,:])
-        # print('TARGET ANGLE: ', obs.target_angle[self.batch_index,:,:])
-        # print('REWARDS: ', rew[self.batch_index])
-        # # print('REWARDS: ', rew[batch_ind,:]) # NOTE: USE THIS FOR DEBUGGING/TESTING NEW REWARDS
+        # print('STEP_NUM: ', self.env._step_num[self.parallel_index].item())
+        # print('OBSTACLES DISTANCES: ', obs.obstacles_distances[self.parallel_index,:,:])
+        # print('OTHERS DISTANCES: ', obs.others_distances[self.parallel_index,:,:])
+        # print('TARGET DISTANCE: ', obs.target_distance[self.parallel_index,:,:])
+        # print('TARGET ANGLE: ', obs.target_angle[self.parallel_index,:,:])
+        # print('REWARDS: ', rew[self.parallel_index])
+        # # print('REWARDS: ', rew[parallel_ind,:]) # NOTE: USE THIS FOR DEBUGGING/TESTING NEW REWARDS
         # print('\n')
-        updated_agents_pos = self.env.states[self.batch_index,:,:2]
+        updated_agents_pos = self.env.states[self.parallel_index,:,:2]
         self.agents_scatter.set_offsets(updated_agents_pos.cpu().numpy())
 
-        updated_obs_pos = self.env.obstacles[self.batch_index,:,:2]
+        updated_obs_pos = self.env.obstacles[self.parallel_index,:,:2]
         self.obs_scatter.set_offsets(updated_obs_pos.cpu().numpy())
 
         return (self.agents_scatter, self.obs_scatter)

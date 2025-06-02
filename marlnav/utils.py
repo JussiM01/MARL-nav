@@ -32,7 +32,7 @@ class TriangleIntitializer(object):
     def __init__(self, params):
         self.device = params['device']
         self.init_method = params['init_method']
-        self.batch_size = params['batch_size']
+        self.num_parallel = params['num_parallel']
         self.ags_cent_x = params['ags_cent_x']
         self.ags_cent_y = params['ags_cent_y']
         self.ags_dist = params['ags_dist']
@@ -64,14 +64,14 @@ class TriangleIntitializer(object):
         ags_dir = torch.tensor([[1., 0.], [1., 0.], [1., 0.]]).to(self.device)
 
         self.ags_pos = torch.unsqueeze(
-            ags_pos, dim=0).repeat(self.batch_size, 1, 1)
+            ags_pos, dim=0).repeat(self.num_parallel, 1, 1)
         self.ags_dir = torch.unsqueeze(
-            ags_dir, dim=0).repeat(self.batch_size, 1, 1)
+            ags_dir, dim=0).repeat(self.num_parallel, 1, 1)
         target = torch.unsqueeze(torch.tensor(
             [self.tar_pos_x, self.tar_pos_y]).to(self.device), dim=0)
         self.target = torch.unsqueeze(
-            target, dim=0).repeat(self.batch_size, 1, 1)
-        self.speeds = torch.zeros([self.batch_size, 3, 1]).to(
+            target, dim=0).repeat(self.num_parallel, 1, 1)
+        self.speeds = torch.zeros([self.num_parallel, 3, 1]).to(
             self.device)
 
         sigma = torch.diag(torch.tensor([self.ags_std, self.ags_std])).to(
@@ -86,8 +86,8 @@ class TriangleIntitializer(object):
         return states, obstacles, self.target
 
     def _sample_agents(self):
-        pos_noise = self.ags_dist * self.pos_noise.sample((self.batch_size, 3))
-        angles = self.angle_range * (torch.rand(self.batch_size, 3) - 0.5)
+        pos_noise = self.ags_dist * self.pos_noise.sample((self.num_parallel, 3))
+        angles = self.angle_range * (torch.rand(self.num_parallel, 3) - 0.5)
         rotated_dirs = self._rotate(self.ags_dir, self.noisy_ags * angles)
         positions = self.ags_pos + self.noisy_ags * pos_noise
         states = torch.cat([positions, rotated_dirs, self.speeds], dim=2)
@@ -96,9 +96,9 @@ class TriangleIntitializer(object):
 
     def _sample_obstacles(self):
         scaled_pos_x = self._obs_x_range * (
-            torch.rand(self.batch_size, self.num_obs, 1) - 0.5)
+            torch.rand(self.num_parallel, self.num_obs, 1) - 0.5)
         scaled_pos_y = self._obs_y_range * (
-            torch.rand(self.batch_size, self.num_obs, 1) - 0.5)
+            torch.rand(self.num_parallel, self.num_obs, 1) - 0.5)
         obs_pos_x = scaled_pos_x + self._obs_mean_x
         obs_pos_y = scaled_pos_y + self._obs_mean_y
 
@@ -132,7 +132,7 @@ class MockSampler(object):  # NOTE: THIS ONE IS FOR ACCELERATION TESTING
             (action10, action11, action12) = params['actions'][1]
             device = params['device']
 
-            self.action_batch = (torch.tensor([[action00, action01, action02],
+            self.action_array = (torch.tensor([[action00, action01, action02],
                 [action10, action11, action12]]).to(device)
                 for i in range(params['max_step']))
 
@@ -150,12 +150,12 @@ class MockSampler(object):  # NOTE: THIS ONE IS FOR ACCELERATION TESTING
             self._actions1 = (
                 action1_half if i == 0. else [action10, action11, action12]
                 for i in range(params['max_step']))
-            self.action_batch = (torch.tensor([[next(self._action00), action01,
+            self.action_array = (torch.tensor([[next(self._action00), action01,
                 next(self._action02)], next(self._actions1)]).to(device)
                 for i in range(params['max_step']))
 
     def __call__(self):
-        return next(self.action_batch)
+        return next(self.action_array)
 
 # class MockSampler(object):
 #     """Mock sampler for testing the dynamics model and its visualization."""
@@ -174,26 +174,26 @@ class MockSampler(object):  # NOTE: THIS ONE IS FOR ACCELERATION TESTING
 #         self._actions1 = ([0.5*action10, 0.5*action11, 0.5*action12] if i == 0
 #             else [action10, action11, action12]
 #             for i in range(params['max_step']))
-#         self.action_batch = (torch.tensor([[0., next(self._action01),
+#         self.action_array = (torch.tensor([[0., next(self._action01),
 #             next(self._action02)], next(self._actions1)]).to(device)
 #             for i in range(params['max_step']))
 #
 #     def __call__(self):
-#         return next(self.action_batch)
+#         return next(self.action_array)
 
 class ConstantSampler(object):
     """Constant action sampler for testing."""
 
     def __init__(self, params):
         self.actions = torch.tensor([params['num_agents']*[[0., 1.]]
-            for i in range(params['batch_size'])]).to(params['device'])
+            for i in range(params['num_parallel'])]).to(params['device'])
 
     def __call__(self):
         return self.actions
 
 
 def action_sampler(params):
-    """Samples a random action batch."""
+    """Samples a random action tensor."""
     if params['sample_method'] == 'mock_sampler':
         return MockSampler(params)
     elif params['sample_method'] =='const_sampler':
@@ -237,7 +237,7 @@ def save_plot(fig, filename, dir):
     plt.close(fig)
 
 
-def plot_states_and_rews(env, num_steps, batch_ind, agent_ind):
+def plot_states_and_rews(env, num_steps, parallel_ind, agent_ind):
     """Saves test plots of the states and rewards."""
     neighbour_inds = list({0, 1, 2} - {agent_ind})
     first = neighbour_inds[0]
@@ -256,23 +256,23 @@ def plot_states_and_rews(env, num_steps, batch_ind, agent_ind):
     for i in range(num_steps):
         actions = env.sample_actions()
         obs, rew, _, _, _ = env.step(actions)
-        # print('OBSTACLES DISTANCES: ', obs.obstacles_distances[batch_ind,:,:])
-        # print('OTHERS DISTANCES: ', obs.others_distances[batch_ind,:,:])
-        # print('TARGET DISTANCE: ', obs.target_distance[batch_ind,:,:])
-        # print('TARGET ANGLE: ', obs.target_angle[batch_ind,:,:])
-        # print('REWARDS: ', rew[batch_ind])
-        # # print('REWARDS: ', rew[batch_ind,:]) # NOTE: USE THIS FOR DEBUGGING/TESTING NEW REWARDS
+        # print('OBSTACLES DISTANCES: ', obs.obstacles_distances[parallel_ind,:,:])
+        # print('OTHERS DISTANCES: ', obs.others_distances[parallel_ind,:,:])
+        # print('TARGET DISTANCE: ', obs.target_distance[parallel_ind,:,:])
+        # print('TARGET ANGLE: ', obs.target_angle[parallel_ind,:,:])
+        # print('REWARDS: ', rew[parallel_ind])
+        # # print('REWARDS: ', rew[parallel_ind,:]) # NOTE: USE THIS FOR DEBUGGING/TESTING NEW REWARDS
         # print('\n')
-        target_angles += [obs.target_angle[batch_ind, agent_ind,0].item()]
-        target_distances += [obs.target_distance[batch_ind, agent_ind,0].item()]
-        all_obs_angels += [obs.obstacles_angles[batch_ind, agent_ind,0].item()]
-        all_obs_distances += [obs.obstacles_distances[batch_ind, agent_ind,0].item()]
-        angles_to_first += [obs.others_angles[batch_ind, agent_ind, 0].item()]
-        distances_to_first += [obs.others_distances[batch_ind, agent_ind, 0].item()]
-        angles_to_second += [obs.others_angles[batch_ind, agent_ind, 1].item()]
-        distances_to_second += [obs.others_distances[batch_ind, agent_ind, 1].item()]
-        rewards += [rew[batch_ind].item()]
-        # rewards += [rew[batch_ind, agent_ind].item()] # NOTE: USE THIS FOR DEBUGGING/TESTING NEW REWARDS
+        target_angles += [obs.target_angle[parallel_ind, agent_ind,0].item()]
+        target_distances += [obs.target_distance[parallel_ind, agent_ind,0].item()]
+        all_obs_angels += [obs.obstacles_angles[parallel_ind, agent_ind,0].item()]
+        all_obs_distances += [obs.obstacles_distances[parallel_ind, agent_ind,0].item()]
+        angles_to_first += [obs.others_angles[parallel_ind, agent_ind, 0].item()]
+        distances_to_first += [obs.others_distances[parallel_ind, agent_ind, 0].item()]
+        angles_to_second += [obs.others_angles[parallel_ind, agent_ind, 1].item()]
+        distances_to_second += [obs.others_distances[parallel_ind, agent_ind, 1].item()]
+        rewards += [rew[parallel_ind].item()]
+        # rewards += [rew[parallel_ind, agent_ind].item()] # NOTE: USE THIS FOR DEBUGGING/TESTING NEW REWARDS
 
     pi_plus = 3.5
     fig, axs = plt.subplots(4, 2, figsize=(10, 10))
@@ -301,10 +301,10 @@ def plot_states_and_rews(env, num_steps, batch_ind, agent_ind):
     for ax in axs.flat:
         ax.set(xlabel='step number', ylabel='value')
 
-    fig.suptitle('States, batch index: {0}, agent index: {1}'.format(
-        batch_ind, agent_ind))
-    save_plot(fig, 'states_batch_{0}_agent_{1}.png'.format(
-        batch_ind, agent_ind), 'plots')
+    fig.suptitle('States, parallel index: {0}, agent index: {1}'.format(
+        parallel_ind, agent_ind))
+    save_plot(fig, 'states_array_{0}_agent_{1}.png'.format(
+        parallel_ind, agent_ind), 'plots')
 
     tar_fac = env._target_factor
     hea_fac = env._heading_factor
@@ -315,10 +315,10 @@ def plot_states_and_rews(env, num_steps, batch_ind, agent_ind):
     fig, ax = plt.subplots(1, 1)
     ax.set(xlabel='step number', ylabel='value')
     ax.plot(rewards)
-    fig.suptitle('Rewards, batch index: {0}, agent index: {1}'.format(
-        batch_ind, agent_ind)
+    fig.suptitle('Rewards, parallel index: {0}, agent index: {1}'.format(
+        parallel_ind, agent_ind)
         + '\n Factors: tar {0}, hea {1}'.format(tar_fac, hea_fac)
         + ', dis {0}, ris {1}, sof {2}'.format(dis_fac, ris_fac, sof_fac))
     save_plot(fig, 'rewards_B{0}A{1}T{2}H{3}D{4}R{5}S{6}.png'.format(
-        batch_ind, agent_ind, tar_fac, hea_fac, dis_fac, ris_fac, sof_fac),
+        parallel_ind, agent_ind, tar_fac, hea_fac, dis_fac, ris_fac, sof_fac),
         'plots')

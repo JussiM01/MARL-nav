@@ -6,13 +6,13 @@ from marlnav.utils import init_sampler, action_sampler, Observations
 
 
 class Env(object):
-    """Batched model for the agents' states and the environment."""
+    """Parallelized model for the agents' states and the environment."""
 
     def __init__(self, params):
 
         self.params = params
         self.device = params['device']
-        self.batch_size = params['batch_size']
+        self.num_parallel = params['num_parallel']
         self.num_agents = params['num_agents']
         self.num_obstacles = params['num_obstacles'] # NOTE: ADD THIS TO main.py (args & params)
         self.max_step = params['max_step']
@@ -35,9 +35,9 @@ class Env(object):
         self.max_accel = params['max_accel']
 
         # Counters for truncation and termination
-        self._step_num = torch.zeros([self.batch_size]).to(self.device)
-        self._terminates = torch.tensor(self.batch_size*[False]).to(self.device)
-        self._reinit_mask = torch.zeros([self.batch_size]).to(self.device)
+        self._step_num = torch.zeros([self.num_parallel]).to(self.device)
+        self._terminates = torch.tensor(self.num_parallel*[False]).to(self.device)
+        self._reinit_mask = torch.zeros([self.num_parallel]).to(self.device)
 
         # Reward weight factors
         self._risk_factor = params['risk_factor']
@@ -60,7 +60,7 @@ class Env(object):
 
     def reset(self):
         """Resets the agents' and env states, returns observations and info."""
-        self._reinit_mask = torch.ones([self.batch_size]).to(self.device)
+        self._reinit_mask = torch.ones([self.num_parallel]).to(self.device)
 
         return self._obsevations(), self.params
 
@@ -72,7 +72,7 @@ class Env(object):
         self.obstacles = self._reinit_update(self.obstacles, obstacles)
         self.target = self._reinit_update(self.target, target)
         self._step_num = self._reinit_update(
-            self._step_num, torch.zeros([self.batch_size]).to(self.device))
+            self._step_num, torch.zeros([self.num_parallel]).to(self.device))
 
     def _reinit_update(self, old_vars, new_vars):
         """Changes new values based on reinit_mask rows (1 new, 0 old)."""
@@ -84,7 +84,7 @@ class Env(object):
         """Updates the states and returns observations, rewards, terminated,
         truncated and info tensors."""
         self._move_agents(actions)
-        self._step_num += torch.ones([self.batch_size]).to(self.device)
+        self._step_num += torch.ones([self.num_parallel]).to(self.device)
         truncated = (self._step_num > self.episode_len -1)
         observations = self._observations()
         rewards, terminated = self._rews_and_terms(observations)
@@ -98,7 +98,7 @@ class Env(object):
         return observations, rewards, terminated, truncated, self.params # NOTE: CAT OBSERVATIONS LATER & ADD INFO PARAMS
 
     def sample_actions(self):
-        """Samples an action batch."""
+        """Samples an action tensor."""
         return self._sampler()
 
     def _move_agents(self, actions):
@@ -113,7 +113,7 @@ class Env(object):
         self.states[:,:,:2] += directions * speeds
 
     def _rotate_directions(self, angles):
-        """Rotates the directions of the whole states batch."""
+        """Rotates the directions of the whole states tensor."""
         directions = self.states[:,:,2:4]
         self.states[:,:,2:4] = torch.vmap(torch.vmap(
             self._rotate))(directions, angles)
@@ -207,14 +207,14 @@ class Env(object):
         distance_rew = self._distance_factor * distance_scores
         heading_rew = self._heading_factor * heading_scores
         target_rew = self._target_factor * all_in_target.expand(
-            size=(self.batch_size, self.num_agents))
+            size=(self.num_parallel, self.num_agents))
         soft_rew = self._soft_factor * soft_score
         reward = target_rew + heading_rew + distance_rew + soft_rew -risk_loss
 
         return torch.mean(reward, dim=1), terminated
         # return reward, terminated # NOTE: USE THIS FOR DEBUGGING/TESTING NEW REWARDS
 
-    def _in_area_detect(self, distances, radius): # INPUT SHAPE: (batch_size, num_agents, ...)
+    def _in_area_detect(self, distances, radius): # INPUT SHAPE: (num_parallel, num_agents, ...)
         """Returns a tensor of ones (in area) and zeros (outside)."""
         detections = torch.where(distances < radius, 1., 0.) # ... = num_objects or (num_agents-1)
         detections, _ = torch.max(detections, dim=2)
@@ -231,7 +231,7 @@ class Env(object):
         return torch.div(capped_sums, max_value) # SCALED BY THE MAX VALUE, THIS IS NEEDED (might dominate other
                                                                             # rewards for large number of agents)
 
-    def _heading_reward(self, heading_diffs, max_angle_diff): # INPUT SHAPE: (batch_size, num_agents, 1)
+    def _heading_reward(self, heading_diffs, max_angle_diff): # INPUT SHAPE: (num_parallel, num_agents, 1)
         """Returns rewards for keeping the heading near target direction."""
         abs_diffs = torch.squeeze(torch.abs(heading_diffs), dim=2)
 
@@ -244,19 +244,19 @@ class Env(object):
 
         return torch.clamp(scaled_reward, max=1.)
 
-    def _get_distances(self, own_pos_batch, others_pos_batch): # NOTE: FOR SINGLE AGENT BATCH
-        """Returns batch of distances between own and others positions."""
+    def _get_distances(self, own_pos_array, others_pos_array): # NOTE: FOR SINGLE AGENT PARALLEL ARRAY
+        """Returns tensor of distances between own and others positions."""
 
-        return torch.cdist(torch.unsqueeze(own_pos_batch, 1), others_pos_batch)
+        return torch.cdist(torch.unsqueeze(own_pos_array, 1), others_pos_array)
 
-    def _get_angles(self, own_pos_batch, others_pos_batch, direction_batch): # NOTE: FOR SINGLE AGENT BATCH
-        """Returns a batch of oriented angle differences from the direction."""
-        difference_batch = others_pos_batch - torch.unsqueeze(own_pos_batch, dim=1)
-        normalized_batch = torch.nn.functional.normalize(difference_batch, dim=2)
-        dot_batch = torch.clamp(torch.einsum('bj,bij->bi', direction_batch,
-            normalized_batch), -1 + 1e-8, 1 - 1e-8)
-        dir_projections = torch.einsum('bi,bj->bij', dot_batch, direction_batch)
-        orthogonal_comps = normalized_batch - dir_projections
+    def _get_angles(self, own_pos_array, others_pos_array, direction_array): # NOTE: FOR SINGLE AGENT PARALLEL ARRAY
+        """Returns a tensor of oriented angle differences from the direction."""
+        difference_array = others_pos_array - torch.unsqueeze(own_pos_array, dim=1)
+        normalized_array = torch.nn.functional.normalize(difference_array, dim=2)
+        dot_array = torch.clamp(torch.einsum('bj,bij->bi', direction_array,
+            normalized_array), -1 + 1e-8, 1 - 1e-8)
+        dir_projections = torch.einsum('bi,bj->bij', dot_array, direction_array)
+        orthogonal_comps = normalized_array - dir_projections
         signs = torch.where(orthogonal_comps[:,:,0] > 0, -1., 1.)
 
-        return signs * torch.acos(dot_batch)
+        return signs * torch.acos(dot_array)

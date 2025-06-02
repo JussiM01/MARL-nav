@@ -21,7 +21,7 @@ def main(params, mode):
         plot_states_and_rews(
             env,
             params['animation']['max_step'],
-            params['animation']['batch_index'],
+            params['animation']['parallel_index'],
             params['animation']['agent_index']
             )
 
@@ -53,16 +53,16 @@ if __name__ == '__main__':
         help='size of the obstacle in the animation')
     parser.add_argument('-sit', '--size_target', type=int, default=100,
         help='size of the target in the animation')
-    parser.add_argument('-bi', '--batch_index', type=int, default=0, # NOTE: CHANGE LATER?
-        help='index of the rendered environment in the batch')
+    parser.add_argument('-pi', '--parallel_index', type=int, default=0, # NOTE: CHANGE LATER?
+        help='index of the rendered environment in the parallelization axis')
     parser.add_argument('-ai', '--agent_index', type=int, default=0, # NOTE: CHANGE LATER?
         help='index of the agent for whose rewards are plotted')
     parser.add_argument('-in', '--interval', type=int, default=10,
         help='interval param for the animation (small is fast).')
 
     # env args
-    parser.add_argument('-ba', '--batch_size', type=int, default=2, # NOTE: DEFAULT=2 FOR TESTING, change this later?
-        help='number of enviroments in the batch')
+    parser.add_argument('-np', '--num_parallel', type=int, default=2, # NOTE: DEFAULT=2 FOR TESTING, change this later?
+        help='number of the parallel enviroments')
     parser.add_argument('-na', '--num_agents', type=int, default=3,
         help='number of agents in a single environment')
     parser.add_argument('-no', '--num_obstacles', type=int, default=1, # NOTE: DEFAULT=1 FOR TESTING, change this later?
@@ -114,7 +114,7 @@ if __name__ == '__main__':
             'init': {
                 'init_method': 'triangle',
                 'device': device,
-                'batch_size': args.batch_size,
+                'num_parallel': args.num_parallel,
                 'ags_cent_x': 150.,
                 'ags_cent_y': 375.,
                 'ags_dist': 20.,
@@ -133,7 +133,7 @@ if __name__ == '__main__':
             'sampler': {
                 'sample_method': 'const_sampler', # TESTING FIRST THE CONSTANT ACTIONS CASE
                 'device': device,
-                'batch_size': args.batch_size,
+                'num_parallel': args.num_parallel,
                 'num_agents': args.num_agents,
             }
         }
@@ -159,7 +159,7 @@ if __name__ == '__main__':
                     ],
                     [
                     [1400., 375.],
-                    ]], # NOTE: only one obstacle per batch (for now)
+                    ]], # NOTE: only one obstacle per parallel env (for now)
                 'mock_target': [
                     [
                     [1400., 700.],
@@ -200,7 +200,7 @@ if __name__ == '__main__':
                 'mock_obstacles': [
                     [
                     [900., 475.]
-                    ], # NOTE: only one obstacle per batch (for now)
+                    ], # NOTE: only one obstacle per parallel env (for now)
                     [
                     [750., 75.]
                     ]],
@@ -246,7 +246,7 @@ if __name__ == '__main__':
 #             'mock_obstacles': [
 #                 [
 #                 [750., 475.]
-#                 ], # NOTE: only one obstacle per batch (for now)
+#                 ], # NOTE: only one obstacle per parallel env (for now)
 #                 [
 #                 [750., 75.]
 #                 ]],
@@ -290,7 +290,7 @@ if __name__ == '__main__':
     #         'mock_obstacles': [
     #             [
     #             [550., 375.]
-    #             ], # NOTE: only one obstacle per batch (for now)
+    #             ], # NOTE: only one obstacle per parallel env (for now)
     #             [
     #             [750., 675.]
     #             ]],
@@ -328,7 +328,7 @@ if __name__ == '__main__':
             'color_obstacles': (1, 0, 0, 1), # NOTE: FIX A PROPER VALUE!
             'size_target': args.size_target,
             'color_target': (0, 1, 0, 1), # NOTE: FIX A PROPER VALUE!
-            'batch_index': args.batch_index,
+            'parallel_index': args.parallel_index,
             'agent_index': args.agent_index, # NOTE: USED ONLY FOR REWARDS PLOTTING
             'sampling_style': args.sampling_style,
             'max_step': args.max_step,
@@ -336,7 +336,7 @@ if __name__ == '__main__':
         },
         'env': {
             'device': device,
-            'batch_size': args.batch_size,
+            'num_parallel': args.num_parallel,
             'num_agents': args.num_agents,
             'num_obstacles': args.num_obstacles,
             'x_bound': args.max_x_value,
