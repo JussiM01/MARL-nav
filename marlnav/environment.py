@@ -47,15 +47,15 @@ class Env(object):
         self._soft_factor = params['soft_factor']
 
         # Geometric attributes
-        self._ob_risk_dist = 20.
-        self._ag_risk_dist = 10.
-        self._ob_coll_dist = 10.
+        self._ob_risk_dist = 60.
+        self._ag_risk_dist = 15.
+        self._ob_coll_dist = 50.
         self._ag_coll_dist = 5.
-        self._agents_min_d = 15.
-        self._agents_max_d = 30.
+        self._agents_min_d = 30.
+        self._agents_max_d = 50.
         self._max_at_prop_d = 2 # NOTE: IS THIS NEEDED ?
         self._max_angle_diff = math.pi/8
-        self._target_radius = 25.
+        self._target_radius = 30.
         self._cap_distance = 0.1
 
     def reset(self):
