@@ -91,7 +91,8 @@ class Env(object):
 
         is_finished = torch.logical_or(truncated, terminated)
         self._reinit_mask = torch.where(is_finished, 1, 0)
-        self._reinit()
+        self._reinit() # reinit envs for terminated parallel indeces and use
+        observations = self._observations() # observations from reinited states
 
         # return (torch.cat(observations, dim=2), rewards, terminated, truncated,
         #         self.params)
@@ -201,7 +202,9 @@ class Env(object):
         # Set envs where agents have reached the target to terminate in the next
         # step (since cummulative reward will be zeroed at the terminal step)
         to_terminate = torch.squeeze(all_in_target) > 0
-        self._terminates = to_terminate
+        self._terminates = torch.logical_and(~self._terminates, to_terminate)
+        # Only previously False indeces are set to True based on 'to_terminate'
+        # so that the reinit is done only ones after the target is reached.
 
         risk_loss = self._risk_factor * risks
         distance_rew = self._distance_factor * distance_scores
