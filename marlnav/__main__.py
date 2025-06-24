@@ -49,7 +49,7 @@ if __name__ == '__main__':
         help='animation plot height in centimeters')
     parser.add_argument('-sia', '--size_agents', type=int, default=10,
         help='size of the agents in the animation')
-    parser.add_argument('-sio', '--size_obstacles', type=int, default=100,
+    parser.add_argument('-sio', '--size_obstacles', type=int, default=2400,
         help='size of the obstacle in the animation')
     parser.add_argument('-sit', '--size_target', type=int, default=100,
         help='size of the target in the animation')
@@ -65,7 +65,7 @@ if __name__ == '__main__':
         help='number of the parallel enviroments')
     parser.add_argument('-na', '--num_agents', type=int, default=3,
         help='number of agents in a single environment')
-    parser.add_argument('-no', '--num_obstacles', type=int, default=1, # NOTE: DEFAULT=1 FOR TESTING, change this later?
+    parser.add_argument('-no', '--num_obstacles', type=int, default=3, # NOTE: DEFAULT=1 FOR TESTING, change this later?
         help='number of obstacles in a single environment')
     parser.add_argument('-ms', '--max_step', type=int, default=1000, # NOTE: DEFAULT=100 FOR TESTING, change this later?
         help='maximum number of time steps in the simulation')
@@ -117,18 +117,18 @@ if __name__ == '__main__':
                 'num_parallel': args.num_parallel,
                 'ags_cent_x': 150.,
                 'ags_cent_y': 375.,
-                'ags_dist': 20.,
+                'ags_dist': 40.,
                 'tar_pos_x': 1350.,
                 'tar_pos_y': 375.,
-                'num_obs': 10,
+                'num_obs': args.num_obstacles,
                 'noisy_ags': False,
                 # 'noisy_ags': True, # TEST FIRST WITH THE STATIC AGENT STATES CASE
                 'ags_std': 0.01,
                 'angle_range': math.pi/6,
-                'obst_min_x': 300.,
-                'obst_max_x': 1200.,
-                'obst_min_y': 150.,
-                'obst_max_y': 600.
+                'obst_min_x': 500.,
+                'obst_max_x': 1000.,
+                'obst_min_y': 250.,
+                'obst_max_y': 500.
                 },
             'sampler': {
                 'sample_method': 'const_sampler', # TESTING FIRST THE CONSTANT ACTIONS CASE
