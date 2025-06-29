@@ -47,12 +47,6 @@ if __name__ == '__main__':
         help='animation plot width in centimeters')
     parser.add_argument('-fy', '--fig_size_y', type=float, default=5.0,
         help='animation plot height in centimeters')
-    parser.add_argument('-sia', '--size_agents', type=int, default=10,
-        help='size of the agents in the animation')
-    parser.add_argument('-sio', '--size_obstacles', type=int, default=2400,
-        help='size of the obstacle in the animation')
-    parser.add_argument('-sit', '--size_target', type=int, default=100,
-        help='size of the target in the animation')
     parser.add_argument('-pi', '--parallel_index', type=int, default=0, # NOTE: CHANGE LATER?
         help='index of the rendered environment in the parallelization axis')
     parser.add_argument('-ai', '--agent_index', type=int, default=0, # NOTE: CHANGE LATER?
@@ -322,12 +316,6 @@ if __name__ == '__main__':
             'size_y': args.fig_size_y,
             'x_max': args.max_x_value,
             'y_max': args.max_y_value,
-            'size_agents': args.size_agents,
-            'color_agents': (0, 0, 0, 1),
-            'size_obstacles': args.size_obstacles,
-            'color_obstacles': (1, 0, 0, 1), # NOTE: FIX A PROPER VALUE!
-            'size_target': args.size_target,
-            'color_target': (0, 1, 0, 1), # NOTE: FIX A PROPER VALUE!
             'parallel_index': args.parallel_index,
             'agent_index': args.agent_index, # NOTE: USED ONLY FOR REWARDS PLOTTING
             'sampling_style': args.sampling_style,

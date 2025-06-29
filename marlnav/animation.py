@@ -16,13 +16,14 @@ class Animation:
         agents_pos = env.states[self.parallel_index,:,:2].cpu().numpy()
         obs_pos = env.obstacles[self.parallel_index,:,:].cpu().numpy()
         target_pos = env.target[self.parallel_index,:,:].cpu().numpy()
-        fig, agents_scatter, obs_scatter, target_scatter = init_animation(
+        fig, agents_sca, obs_sca1, obs_sca2, target_sca = init_animation(
             params, agents_pos, obs_pos, target_pos)
         fig.canvas.manager.set_window_title('MARL-nav')
         self.fig = fig
-        self.agents_scatter = agents_scatter # NOTE: Make sure that these are drawn in the right order!
-        self.obs_scatter = obs_scatter       # agents should be drawn on top of obstacles and target if
-        self.target_scatter = target_scatter # they ever come across/colide with each other.
+        self.agents_scatter = agents_sca # NOTE: Make sure that these are drawn in the right order!
+        self.obs_scatter1 = obs_sca1       # agents should be drawn on top of obstacles and target if
+        self.obs_scatter2 = obs_sca2
+        self.target_scatter = target_sca # they ever come across/colide with each other.
         self.sampling_style = params['sampling_style']
         self.max_step = params['max_step']
         self.interval = params['interval']
@@ -48,9 +49,10 @@ class Animation:
         self.agents_scatter.set_offsets(updated_agents_pos.cpu().numpy())
 
         updated_obs_pos = self.env.obstacles[self.parallel_index,:,:2]
-        self.obs_scatter.set_offsets(updated_obs_pos.cpu().numpy())
+        self.obs_scatter1.set_offsets(updated_obs_pos.cpu().numpy())
+        self.obs_scatter2.set_offsets(updated_obs_pos.cpu().numpy())
 
-        return (self.agents_scatter, self.obs_scatter)
+        return (self.agents_scatter, self.obs_scatter1, self.obs_scatter2)
 
     def run(self):
         """Runs the animation."""

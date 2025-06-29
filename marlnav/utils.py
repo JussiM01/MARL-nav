@@ -210,14 +210,15 @@ def init_animation(params, agents_pos, obstacles_pos, target_pos):
     ax.set_ylim(0, params['y_max']), ax.set_yticks([])
 
     agents_scatter = ax.scatter(agents_pos[:, 0], agents_pos[:, 1], # NOTE: CHECK the drawing order (should this be last?)
-        s=params['size_agents'], lw=0.5, c=np.array([params['color_agents']]))
-    obs_scatter = ax.scatter(obstacles_pos[:, 0], obstacles_pos[:, 1],
-        s=params['size_obstacles'], lw=0.5,
-        c=np.array([params['color_obstacles']]))
-    target_scatter = ax.scatter(target_pos[:, 0], target_pos[:, 1], # NOTE: CHEKC DIMS! this is only sngle position
-        s=params['size_target'], lw=0.5, c=np.array([params['color_target']]))
+        s=10, lw=0.5, c=np.array([(0., 0., 0., 1.)]))
+    obs_scatter1 = ax.scatter(obstacles_pos[:, 0], obstacles_pos[:, 1],
+        s=2200, lw=0.5, c=np.array([(1., 0.5, 0.5, 1.)]))
+    obs_scatter2 = ax.scatter(obstacles_pos[:, 0], obstacles_pos[:, 1],
+        s=1500, lw=0.5, c=np.array([(1., 0., 0., 1.)]))
+    target_scatter = ax.scatter(target_pos[:, 0], target_pos[:, 1],
+        s=2000, facecolors='w', lw=1.5, edgecolors='k', linestyle=':')
 
-    return fig, agents_scatter, obs_scatter, target_scatter
+    return fig, agents_scatter, obs_scatter1, obs_scatter2, target_scatter
 
 
 def load_config(filename, dir):
