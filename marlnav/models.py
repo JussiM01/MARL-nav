@@ -55,16 +55,31 @@ class PPO(object):
     """Multi-agent PPO model with separate actor and critic models."""
 
     def __init__(self, params):
-        self.actor = Actor(**params['actor'])
-        self.critic = Critic(**params['critic'])
+        self.device = params['device']
+        self.actor = Actor(**params['actor']).to(self.device)
+        self.critic = Critic(**params['critic']).to(self.device)
         self.epsilon = params['epsilon']
         self.gamma = params['gamma']
-        self.max_rew = float("-inf")
         self.buffer = []
+        self._max_rew = float("-inf")
+        self._mean_rew = 0.
 
     def process_rewards(self):
 
-        raise NotImplementedError
+        curr_rew = torch.zeros([num_parallel], dtype=float).to(self.device)
+        # Changing the rewards to cummulative rewards in a backward loop:
+        for i in range(len(self.buffer) - 1, -1, -1):
+            rew, done = self.buffer[i][-2], self.buffer[i][-1]
+            curr_rew = torch.where(done, 0., rew + self.gamma * curr_rew)
+            self.buffer[i][-2] = curr_rew
+
+        std, mean_rew = torch.std_mean(
+            [self.buffer[i][-2] for i in range(len(self.buffer))])
+
+        for i in range(len(self.buffer)): # Normalizing the rewards
+            self.buffer[i][-2] = (self.buffer[i][-2] - avg_rew) / (std + 1e-12)
+
+        self._mean_rew = mean_rew
 
     def train_actor(self):
 
