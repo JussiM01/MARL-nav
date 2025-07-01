@@ -36,7 +36,7 @@ class Animation:
             actions = self.env.sample_actions()
 
         # self.env._move_agents(actions)
-        obs, rew, _, _, _ = self.env.step(actions)
+        obs, rew, _, _ = self.env.step(actions)
         # print('STEP_NUM: ', self.env._step_num[self.parallel_index].item())
         # print('OBSTACLES DISTANCES: ', obs.obstacles_distances[self.parallel_index,:,:])
         # print('OTHERS DISTANCES: ', obs.others_distances[self.parallel_index,:,:])

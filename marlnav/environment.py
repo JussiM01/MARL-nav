@@ -94,9 +94,8 @@ class Env(object):
         self._reinit() # reinit envs for terminated parallel indeces and use
         observations = self._observations() # observations from reinited states
 
-        # return (torch.cat(observations, dim=2), rewards, terminated, truncated,
-        #         self.params)
-        return observations, rewards, terminated, truncated, self.params # NOTE: CAT OBSERVATIONS LATER & ADD INFO PARAMS
+        # return (torch.cat(observations, dim=2), rewards, terminated, truncated)
+        return observations, rewards, terminated, truncated # NOTE: CAT OBSERVATIONS LATER & ADD INFO PARAMS
 
     def sample_actions(self):
         """Samples an action tensor."""

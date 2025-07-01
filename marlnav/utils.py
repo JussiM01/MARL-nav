@@ -256,7 +256,7 @@ def plot_states_and_rews(env, num_steps, parallel_ind, agent_ind):
 
     for i in range(num_steps):
         actions = env.sample_actions()
-        obs, rew, _, _, _ = env.step(actions)
+        obs, rew, _, _ = env.step(actions)
         # print('OBSTACLES DISTANCES: ', obs.obstacles_distances[parallel_ind,:,:])
         # print('OTHERS DISTANCES: ', obs.others_distances[parallel_ind,:,:])
         # print('TARGET DISTANCE: ', obs.target_distance[parallel_ind,:,:])

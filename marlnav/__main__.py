@@ -26,8 +26,8 @@ def main(params, mode):
             ppo.buffer = []
             for j in range(buffer_len):
                 actions, log_probs = ppo.actor(obs)
-                new_obs, rewards, terminated, truncated, info = env.step(actions) # REMOVE info EVERYWHERE ?
-                done = torch.logical_or(terminated, truncated) # (it's not realy needed for anything)
+                new_obs, rewards, terminated, truncated = env.step(actions)
+                done = torch.logical_or(terminated, truncated)
                 values = ppo.critic(obs)
                 ppo.buffer += [obs, actions, log_probs, values, rewards, done]
                 obs = new_obs
