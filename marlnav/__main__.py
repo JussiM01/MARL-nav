@@ -2,18 +2,41 @@ import argparse
 import math
 import torch
 
-
-
 from marlnav.animation import Animation
 from marlnav.environment import Env
+from marlnav.models import PPO
 from marlnav.utils import load_config, plot_states_and_rews # NOTE: LAST ONE IS FOR TESTING. REMOVE LATER ?
 
 
 def main(params, mode):
 
+    # NOTE: ADD THE RANDOM SEED SETTING HERE !
     env = Env(params['env'])
 
-    if mode == 'rendering':
+    if mode == 'training':
+        num_total = params['num_total']
+        num_parallel = params['num_parallel']
+        num_agents = params['num_agents']
+        buffer_len = params['buffer_len']
+        num_repeats = num_total / (buffer_len * num_parallel)
+        ppo = PPO(params['model'])
+        obs = env._observations() # Initial obs (maybe this should be a public method?)
+
+        for i in range(num_repeats):
+            ppo.buffer = []
+            for j in range(buffer_len):
+                actions, log_probs = ppo.actor(obs)
+                new_obs, rewards, terminated, truncated, info = env.step(actions) # REMOVE info EVERYWHERE ?
+                done = torch.logical_or(terminated, truncated) # (it's not realy needed for anything)
+                values = ppo.critic(obs)
+                ppo.buffer += [obs, actions, log_probs, values, rewards, done]
+                obs = new_obs
+            ppo.process_rewards()
+            ppo.train_actor()
+            ppo.train_critic()
+        ppo.plot_results()
+
+    elif mode == 'rendering':
         renderer = Animation(env, params['animation'])
         renderer.run()
 
@@ -24,11 +47,6 @@ def main(params, mode):
             params['animation']['parallel_index'],
             params['animation']['agent_index']
             )
-
-    elif mode == 'training':
-        raise NotImplementedError
-        # for i in range(params['num_steps']):
-        #     env.update()
 
 
 if __name__ == '__main__':
