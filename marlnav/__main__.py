@@ -17,19 +17,20 @@ def main(params, mode):
         num_total = params['num_total']
         num_parallel = params['num_parallel']
         num_agents = params['num_agents']
+        action_size = params['action_size']
         buffer_len = params['buffer_len']
         num_repeats = num_total / (buffer_len * num_parallel)
         mappo = MAPPO(params['model'])
         obs = env._observations() # Initial obs (maybe this should be a public method?)
 
         for i in range(num_repeats):
-            with torch.no_grad():
+            with torch.no_grad(): # Maybe change this loop to mappo's method ?
                 mappo.buffer = []
                 for j in range(buffer_len):
                     dist = mappo.actor(obs)
                     actions = dist.sample()
                     log_probs = dist.log_prob(actions)
-                    actions = actions.view(-1, num_agents, 2)
+                    actions = actions.view(-1, num_agents, action_size)
                     new_obs, rewards, terminated, truncated = env.step(actions)
                     done = torch.logical_or(terminated, truncated)
                     values = mappo.critic(obs)
