@@ -25,10 +25,8 @@ class Actor(nn.Module):
         sigma = torch.vmap(torch.diag)(std) # NOTE: vmap is needed since std is a batch of vectors
         # NOTE: MAKE SURE SIGMA IS POSITVE (for example add 1e-8 to it?)
         dist = MultivariateNormal(mu, sigma)
-        actions = dist.sample()
-        log_props = dist.log_prob(actions)
 
-        return actions.view((-1, 3, 2)), log_probs.view((-1, 3))
+        return dist
 
 
 class Critic(nn.Module):
