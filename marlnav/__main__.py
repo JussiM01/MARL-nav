@@ -23,17 +23,19 @@ def main(params, mode):
         obs = env._observations() # Initial obs (maybe this should be a public method?)
 
         for i in range(num_repeats):
-            ppo.buffer = []
-            for j in range(buffer_len):
-                dist = ppo.actor(obs)
-                actions = dist.sample()
-                log_probs = dist.log_prob(actions)
-
-                new_obs, rewards, terminated, truncated = env.step(actions)
-                done = torch.logical_or(terminated, truncated)
-                values = ppo.critic(obs)
-                ppo.buffer += [obs, actions, log_probs, values, rewards, done]
-                obs = new_obs
+            with torch.no_grad():
+                ppo.buffer = []
+                for j in range(buffer_len):
+                    dist = ppo.actor(obs)
+                    actions = dist.sample()
+                    log_probs = dist.log_prob(actions)
+                    actions = actions.view(-1, num_agents, 2)
+                    log_probs = log_probs.view(-1, num_agents)
+                    new_obs, rewards, terminated, truncated = env.step(actions)
+                    done = torch.logical_or(terminated, truncated)
+                    values = ppo.critic(obs)
+                    ppo.buffer += [obs, actions, log_probs, values, rewards, done]
+                    obs = new_obs
             ppo.process_rewards()
             ppo.train_actor()
             ppo.train_critic()
