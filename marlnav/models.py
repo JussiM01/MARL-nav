@@ -49,7 +49,7 @@ class Critic(nn.Module):
         return value
 
 
-class PPO(object):
+class MAPPO(object):
     """Multi-agent PPO model with separate actor and critic models."""
 
     def __init__(self, params):
