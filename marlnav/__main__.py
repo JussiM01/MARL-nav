@@ -25,7 +25,10 @@ def main(params, mode):
         for i in range(num_repeats):
             ppo.buffer = []
             for j in range(buffer_len):
-                actions, log_probs = ppo.actor(obs)
+                dist = ppo.actor(obs)
+                actions = dist.sample()
+                log_probs = dist.log_prob(actions)
+
                 new_obs, rewards, terminated, truncated = env.step(actions)
                 done = torch.logical_or(terminated, truncated)
                 values = ppo.critic(obs)
