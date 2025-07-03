@@ -23,7 +23,7 @@ class Actor(nn.Module):
         mu = torch.tanh(self.fc_mu(x))
         std = F.softplus(self.fc_std(x))
         sigma = torch.vmap(torch.diag)(std) # NOTE: vmap is needed since std is a batch of vectors
-        # NOTE: MAKE SURE SIGMA IS POSITVE (for example add 1e-8 to it?)
+        # NOTE: MAKE SURE SIGMA IS POSITVE (for example add 1e-12 to it?)
         dist = MultivariateNormal(mu, sigma)
 
         return dist
@@ -53,9 +53,11 @@ class MAPPO(object):
     """Multi-agent PPO model with separate actor and critic models."""
 
     def __init__(self, params):
+        self.num_agents = params['num_agents']
         self.device = params['device']
         self.actor = Actor(**params['actor']).to(self.device)
         self.critic = Critic(**params['critic']).to(self.device)
+        self.ent_const = params['ent_const']
         self.epsilon = params['epsilon']
         self.gamma = params['gamma']
         self.buffer = []
@@ -91,10 +93,46 @@ class MAPPO(object):
 
         raise NotImplementedError
 
-    def _actor_loss(self): # NOTE: ADD THE PARAMETERS !
+    def _actor_loss(self, mini_batch):
 
-        raise NotImplementedError
+        size = len(mini_batch)
+        obs = torch.cat([batch[i][0] for i in range(size)], dim=0)
+        actions = torch.cat([batch[i][1] for i in range(size)], dim=0)
+        log_probs = torch.cat([batch[i][2] for i in range(n)], dim=0)
+        values = torch.cat([batch[i][3] for i in range(size)], dim=0)
+        rewards = torch.cat([mini_batch[i][4] for i in range(size)], dim=0)
 
-    def _critic_loss(self): # NOTE: ADD THE PARAMETERS !
+        dist = ppo.actor(obs)
+        new_log_probs = dist.log_prob(actions)
+        entropies = dist.entropy()
 
-        raise NotImplementedError
+        advantages = rewards - values
+        advantages = advantages.repeat(self.num_agents)
+
+        margin = self.epsilon # NOTE: IS ANNEALING NEEDED & SHOULD THIS BE A DIFFERENT EPSILON ?
+        # margin = self.epsilon * annealing # NOTE: WHERE THESE COME ?! (should this be differnt epsilon?)
+        ratios = torch.exp(new_log_probs - log_probs)
+
+        catenated = torch.cat([ratios * advantages,
+            torch.clip(ratios, 1 - margin, 1 + margin) * advantages)], dim=1)
+        clip_loss = torch.mean(torch.min(catenated, dim=1))
+        entropy_loss = torch.mean(entropies)
+
+        return clip_loss + self.ent_const * entropy_loss
+
+    def _critic_loss(self, mini_batch):
+
+        size = len(mini_batch)
+        obs = torch.cat([mini_batch[i][0] for i in range(size)], dim=0)
+        values = torch.cat([mini_batch[i][3] for i in range(size)], dim=0)
+        rewards = torch.cat([mini_batch[i][4] for i in range(size)], dim=0)
+        new_values = self.critic(obs)
+
+        diff = (new_values - rewards)**2
+        clamped = torch.clamp(new_values, min=(values - self.epsilon), # CHECK THAT THIS IS THE RIGHT EPSILON !
+            max=(values + self.epsilon))
+        clamped_diff = (clamped - rewards)**2
+        critic_loss = torch.mean( # NOTE: assumes that len(shape) = 1 for both
+            torch.max(torch.cat([diff, clamped_diff], dim=1), dim=1))
+
+        return critic_loss
