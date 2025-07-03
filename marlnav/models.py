@@ -65,6 +65,7 @@ class MAPPO(object):
         self.epsilon = params['epsilon']
         self.gamma = params['gamma']
         self.buffer_len = params['buffer_len']
+        self.num_epochs = params['num_epochs']
         self.batch_size = params['batch_size']
         self.buffer = []
         self._max_rew = float("-inf")
