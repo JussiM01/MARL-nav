@@ -24,7 +24,7 @@ def main(params, mode):
         obs = env._observations() # Initial obs (maybe this should be a public method?)
 
         for i in range(num_repeats):
-            with torch.no_grad(): # Maybe change this loop to mappo's method ?
+            with torch.no_grad(): # Change this loop to mappo's method
                 mappo.buffer = []
                 for j in range(buffer_len):
                     dist = mappo.actor(obs)
@@ -36,6 +36,7 @@ def main(params, mode):
                     values = mappo.critic(obs)
                     mappo.buffer += [obs, actions, log_probs, values, rewards, done]
                     obs = new_obs
+                # Maybe add here progress logging? (& model(s) saving if mean_rew > max_rew ?)
             mappo.process_rewards()
             mappo.train_actor()
             mappo.train_critic()

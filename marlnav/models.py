@@ -57,9 +57,15 @@ class MAPPO(object):
         self.device = params['device']
         self.actor = Actor(**params['actor']).to(self.device)
         self.critic = Critic(**params['critic']).to(self.device)
+        self.actor_optimizer = Adam(
+            self.actor.parameters(), lr=params['lr'], maximize=True)
+        self.critic_optimizer = Adam(
+            self.critic.parameters(), lr=params['lr'], minimize=True)
         self.ent_const = params['ent_const']
         self.epsilon = params['epsilon']
         self.gamma = params['gamma']
+        self.buffer_len = params['buffer_len']
+        self.batch_size = params['batch_size']
         self.buffer = []
         self._max_rew = float("-inf")
         self._mean_rew = 0.
@@ -68,26 +74,52 @@ class MAPPO(object):
 
         curr_rew = torch.zeros([num_parallel], dtype=float).to(self.device)
         # Changing the rewards to cummulative rewards in a backward loop:
-        for i in range(len(self.buffer) - 1, -1, -1):
+        for i in range(self.buffer_len - 1, -1, -1):
             rew, done = self.buffer[i][-2], self.buffer[i][-1]
             curr_rew = torch.where(done, 0., rew + self.gamma * curr_rew)
             self.buffer[i][-2] = curr_rew
 
         std, mean_rew = torch.std_mean(
-            [self.buffer[i][-2] for i in range(len(self.buffer))])
+            [self.buffer[i][-2] for i in range(self.buffer_len)])
 
-        for i in range(len(self.buffer)): # Normalizing the rewards
+        for i in range(self.buffer_len): # Normalizing the rewards
             self.buffer[i][-2] = (self.buffer[i][-2] - avg_rew) / (std + 1e-12)
 
         self._mean_rew = mean_rew
 
     def train_actor(self):
 
-        raise NotImplementedError
+        print('Training the actor ({0} epochs).\n'.format(self.num_epochs))
+        for i in range(self.num_epochs):
+            print('Epoch {0}.\n'.format(j+1))
+            for j in range(self.buffer_len // self.batch_size):
+                start = j * batch_size
+                if start + self.batch_size < self.buffer_len:
+                    end = start + self.batch_size
+                else:
+                    end = -1
+                mini_batch = self.buffer[start:end]
+                self.actor_optimizer.zero_grad()
+                loss = self._actor_loss(mini_batch)
+                loss.backward()
+                self.actor_optimizer.step()
 
     def train_critic(self):
 
-        raise NotImplementedError
+        print('Training the critic ({0} epochs).\n'.format(self.num_epochs))
+        for i in range(self.num_epochs):
+            print('Epoch {0}.\n'.format(j+1))
+            for j in range(self.buffer_len // self.batch_size):
+                start = j * batch_size
+                if start + self.batch_size < self.buffer_len:
+                    end = start + self.batch_size
+                else:
+                    end = -1
+                mini_batch = self.buffer[start:end]
+                self.critic_optimizer.zero_grad()
+                loss = self._critic_loss(mini_batch)
+                loss.backward()
+                self.critic_optimizer.step()
 
     def plot_results(self):
 
