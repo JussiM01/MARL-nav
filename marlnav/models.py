@@ -146,7 +146,7 @@ class MAPPO(object):
                 loss.backward()
                 self.critic_optimizer.step()
 
-    def plot_results(self):
+    def get_results(self):
 
         raise NotImplementedError
 

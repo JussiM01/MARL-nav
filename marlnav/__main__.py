@@ -26,7 +26,7 @@ def main(params, mode):
             mappo.get_data()
             mappo.train_actor()
             mappo.train_critic()
-        mappo.plot_results()
+        mappo.get_results()
 
     elif mode == 'rendering':
         renderer = Animation(env, params['animation'])
