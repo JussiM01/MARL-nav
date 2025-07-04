@@ -108,6 +108,26 @@ if __name__ == '__main__':
     parser.add_argument('-sf', '--soft_factor', type=float, default=100., # NOTE: CHANGE THIS LATER?
         help='Weight factor for the smooth target distance reward.')
 
+    # model specific args
+    parser.add_argument('-hs', '--hidden_size', type=int, default=50, # NOTE: CHANGE THIS LATER?
+        help='Hidden layer size of the models.')
+    parser.add_argument('-lr', '--learning_rate', type=float, default=0.001, # NOTE: CHANGE THIS LATER?
+        help='Learning rate for the training fo actor and critic models.')
+    parser.add_argument('-ec', '--ent_const', type=float, default=0.01, # NOTE: CHANGE THIS LATER?
+        help='Weight constant for the entropy loss.')
+    parser.add_argument('-ep', '--epsilon', type=float, default=0.01, # NOTE: CHANGE THIS LATER?
+        help='Epsilon parameter for the loss clipping.')
+    parser.add_argument('-g', '--gamma', type=float, default=0.99, # NOTE: CHANGE THIS LATER?
+        help='Gamma parameter for the cummulative rewards.')
+    parser.add_argument('-nt', '--num_total', type=int, default=1000000, # NOTE: CHANGE THIS LATER?
+        help='Number of total steps to be executed (parallel included).')
+    parser.add_argument('-bl', '--buffer_len', type=int, default=1000, # NOTE: CHANGE THIS LATER?
+        help='Length parameter for the buffer.')
+    parser.add_argument('-ne', '--num_epochs', type=int, default=10, # NOTE: CHANGE THIS LATER?
+        help='Number of training epochs.')
+    parser.add_argument('-bs', '--batch_size', type=int, default=1000, # NOTE: CHANGE THIS LATER?
+        help='Mini-batch size (should be smaller or equal to buffer_len).')
+
     # init args
     parser.add_argument('-re', '--rendering', action='store_true',
         help='rendering option (no training), action: store_true' )
