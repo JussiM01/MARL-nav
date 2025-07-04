@@ -56,7 +56,7 @@ class MAPPO(object):
         self.num_agents = params['num_agents']
         self.device = params['device']
         self.env = env
-        self.obs = self.env.observations # set the inital observetions
+        self.obs = self.env.observations() # set the inital observetions
         self.actor = Actor(**params['actor']).to(self.device)
         self.critic = Critic(**params['critic']).to(self.device)
         self.actor_optimizer = Adam(
