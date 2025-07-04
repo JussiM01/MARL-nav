@@ -24,7 +24,6 @@ def main(params, mode):
 
         for i in range(num_repeats):
             mappo.get_data()
-            mappo.process_rewards()
             mappo.train_actor()
             mappo.train_critic()
         mappo.plot_results()

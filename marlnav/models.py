@@ -88,12 +88,14 @@ class MAPPO(object):
             self.buffer += [obs, actions, log_probs, values, rewards, done]
             self.obs = new_obs
 
+        self._process_rewards()
+
         ###############################################
         # Add here progress logging & model(s) saving #
-        # if self._mean_rew > self._max_rew ?)        #
+        # if self._mean_rew > self._max_rew           #
         ###############################################
 
-    def process_rewards(self):
+    def _process_rewards(self):
 
         curr_rew = torch.zeros([num_parallel], dtype=float).to(self.device)
         # Changing the rewards to cummulative rewards in a backward loop:
