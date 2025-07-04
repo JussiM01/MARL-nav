@@ -20,23 +20,10 @@ def main(params, mode):
         action_size = params['action_size']
         buffer_len = params['buffer_len']
         num_repeats = num_total / (buffer_len * num_parallel)
-        mappo = MAPPO(params['model'])
-        obs = env._observations() # Initial obs (maybe this should be a public method?)
+        mappo = MAPPO(params['model'], env)
 
         for i in range(num_repeats):
-            with torch.no_grad(): # Change this loop to mappo's method
-                mappo.buffer = []
-                for j in range(buffer_len):
-                    dist = mappo.actor(obs)
-                    actions = dist.sample()
-                    log_probs = dist.log_prob(actions)
-                    actions = actions.view(-1, num_agents, action_size)
-                    new_obs, rewards, terminated, truncated = env.step(actions)
-                    done = torch.logical_or(terminated, truncated)
-                    values = mappo.critic(obs)
-                    mappo.buffer += [obs, actions, log_probs, values, rewards, done]
-                    obs = new_obs
-                # Maybe add here progress logging? (& model(s) saving if mean_rew > max_rew ?)
+            mappo.get_data()
             mappo.process_rewards()
             mappo.train_actor()
             mappo.train_critic()

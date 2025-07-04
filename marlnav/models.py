@@ -52,9 +52,11 @@ class Critic(nn.Module):
 class MAPPO(object):
     """Multi-agent PPO model with separate actor and critic models."""
 
-    def __init__(self, params):
+    def __init__(self, params, env):
         self.num_agents = params['num_agents']
         self.device = params['device']
+        self.env = env
+        self.obs = self.env.observations # set the inital observetions
         self.actor = Actor(**params['actor']).to(self.device)
         self.critic = Critic(**params['critic']).to(self.device)
         self.actor_optimizer = Adam(
@@ -70,6 +72,26 @@ class MAPPO(object):
         self.buffer = []
         self._max_rew = float("-inf")
         self._mean_rew = 0.
+
+    @torch.no_grad()
+    def get_data(self):
+
+        self.buffer = []
+        for j in range(self.buffer_len):
+            dist = self.actor(self.obs)
+            actions = dist.sample()
+            log_probs = dist.log_prob(actions)
+            actions = actions.view(-1, num_agents, action_size)
+            new_obs, rewards, terminated, truncated = env.step(actions)
+            done = torch.logical_or(terminated, truncated)
+            values = self.critic(obs)
+            self.buffer += [obs, actions, log_probs, values, rewards, done]
+            self.obs = new_obs
+
+        ###############################################
+        # Add here progress logging & model(s) saving #
+        # if self._mean_rew > self._max_rew ?)        #
+        ###############################################
 
     def process_rewards(self):
 
