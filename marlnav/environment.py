@@ -62,7 +62,7 @@ class Env(object):
         """Resets the agents' and env states, returns observations and info."""
         self._reinit_mask = torch.ones([self.num_parallel]).to(self.device)
 
-        return self._obsevations(), self.params
+        return self.observations(), self.params
 
     def _reinit(self):
         """Reinits the env's for terminated and truncated indeces."""
@@ -86,13 +86,13 @@ class Env(object):
         self._move_agents(actions)
         self._step_num += torch.ones([self.num_parallel]).to(self.device)
         truncated = (self._step_num > self.episode_len -1)
-        observations = self._observations()
+        observations = self.observations()
         rewards, terminated = self._rews_and_terms(observations)
 
         is_finished = torch.logical_or(truncated, terminated)
         self._reinit_mask = torch.where(is_finished, 1, 0)
         self._reinit() # reinit envs for terminated parallel indeces and use
-        observations = self._observations() # observations from reinited states
+        observations = self.observations() # observations from reinited states
 
         # return (torch.cat(observations, dim=2), rewards, terminated, truncated)
         return observations, rewards, terminated, truncated # NOTE: CAT OBSERVATIONS LATER & ADD INFO PARAMS
@@ -126,7 +126,7 @@ class Env(object):
 
         return torch.matmul(rotation_matrix, direction_vector)
 
-    def _observations(self):
+    def observations(self):
         """Calculates and returns the observations tensor."""
         target_angle = torch.stack([self._get_angles(self.states[:,i,:2],
             self.target, self.states[:,i,2:4])
