@@ -1,7 +1,9 @@
+import os
 import torch
 
 from torch import nn
 from torch.distributions import MultivariateNormal
+from datetime import datetime
 
 
 class Actor(nn.Module):
@@ -70,6 +72,12 @@ class MAPPO(object):
         self.num_epochs = params['num_epochs']
         self.batch_size = params['batch_size']
         self.buffer = []
+        self._wpath = os.makedirs('weights', exist_ok=True)
+        self._ppath = os.makedirs('plots', exist_ok=True)
+        self._lpath = os.makedirs('logs', exist_ok=True)
+        self._time = now.strftime('YmdHMS')
+        self._actor_path = os.path.join(self._wpath, self._time + '_actor.pt')
+        self._critic_path = os.path.join(self._wpath, self._time + '_actor.pt')
         self._max_rew = float("-inf")
         self._mean_rew = 0.
 
@@ -90,10 +98,13 @@ class MAPPO(object):
 
         self._process_rewards()
 
-        ###############################################
-        # Add here progress logging & model(s) saving #
-        # if self._mean_rew > self._max_rew           #
-        ###############################################
+        if.self._mean_rew > self._max_rew:
+            torch.save(self.actor.state_dict(), save._actor_path)
+            torch.save(self.critic.state_dict(), save._critic_path)
+
+        #############################
+        # Add here progress logging #
+        #############################
 
     def _process_rewards(self):
 
