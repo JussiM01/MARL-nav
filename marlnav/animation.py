@@ -9,9 +9,10 @@ from marlnav.utils import init_animation
 class Animation:
     """Animation of the agents' movements in the environment."""
 
-    def __init__(self, env, params):
+    def __init__(self, env, params, actor=None):
 
         self.env = env
+        self.actor = actor
         self.parallel_index = params['parallel_index']
         agents_pos = env.states[self.parallel_index,:,:2].cpu().numpy()
         obs_pos = env.obstacles[self.parallel_index,:,:].cpu().numpy()
@@ -25,13 +26,19 @@ class Animation:
         self.obs_scatter2 = obs_sca2
         self.target_scatter = target_sca # they ever come across/colide with each other.
         self.sampling_style = params['sampling_style']
+        self.random = params['random']
         self.max_step = params['max_step']
         self.interval = params['interval']
 
     def update(self, frame_number):
         """Updates the agents' new positions to the `agents_scatter` object."""
         if self.sampling_style == 'policy':
-            raise NotImplementedError
+            obs = self.env.observations()
+            dist = self.actor(obs)
+            if self.random:
+                actions = dist.sample()
+            else:
+                actions = dist.loc
         elif self.sampling_style == 'sampler':
             actions = self.env.sample_actions()
 

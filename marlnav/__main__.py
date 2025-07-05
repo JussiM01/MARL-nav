@@ -1,4 +1,5 @@
 import argparse
+import os
 import math
 import torch
 
@@ -29,7 +30,19 @@ def main(params, mode):
         mappo.get_results()
 
     elif mode == 'rendering':
-        renderer = Animation(env, params['animation'])
+        style = params['animation']['sampling_style']
+        if style == 'policy': # NOTE: REFACTOR THIS ELSEWHERE (or parts of it) ?
+            actor = Actor(**params['model']['actor']).to(params['device'])
+            filename = os.path.join(
+                '.weights', params['animation']['weights_file']) # ADD EXCEPTION HANDLING ? (missing file)
+            model.load_state_dict(
+                torch.load(filename, weights_only=True))
+            model.eval()
+            renderer = Animation(env, params['animation'], actor=actor)
+        elif style == 'sampler':
+            renderer = Animation(env, params['animation'])
+        else:
+            raise NotImplementedError
         renderer.run()
 
     elif mode == 'plot_saving': # NOTE: FOR TESTING. REMOVE LATER ?
@@ -63,6 +76,10 @@ if __name__ == '__main__':
         help='index of the agent for whose rewards are plotted')
     parser.add_argument('-in', '--interval', type=int, default=10,
         help='interval param for the animation (small is fast).')
+    parser.add_argument('-ra', '--random', action='store_true',
+        help='Stochastic policy (default: predicted mean), action: store_true')
+    parser.add_argument('-w', '--weights_file', type=str,
+        help='Name of the actor model weights file used for policy rendering.')
 
     # env args
     parser.add_argument('-np', '--num_parallel', type=int, default=2, # NOTE: DEFAULT=2 FOR TESTING, change this later?
@@ -349,6 +366,8 @@ if __name__ == '__main__':
             'parallel_index': args.parallel_index,
             'agent_index': args.agent_index, # NOTE: USED ONLY FOR REWARDS PLOTTING
             'sampling_style': args.sampling_style,
+            'random': args.random,
+            'weights_file': args.weights_file,
             'max_step': args.max_step,
             'interval': args.interval,
         },
