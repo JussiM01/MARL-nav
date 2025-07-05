@@ -89,9 +89,9 @@ class MAPPO(object):
             dist = self.actor(self.obs)
             actions = dist.sample()
             log_probs = dist.log_prob(actions)
-            actions = actions.view(-1, num_agents, action_size)
-            new_obs, rewards, terminated, truncated = env.step(actions)
-            done = torch.logical_or(terminated, truncated)
+            actions = actions.view(-1, num_agents, action_size) # NOTE: ADD ACTION SCALLING HERE
+            new_obs, rewards, terminated, truncated = env.step(actions) # use scaled_actions here
+            done = torch.logical_or(terminated, truncated)   # non-scaled should be stored & used in training
             values = self.critic(obs)
             self.buffer += [obs, actions, log_probs, values, rewards, done]
             self.obs = new_obs
