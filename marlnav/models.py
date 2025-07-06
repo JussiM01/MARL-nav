@@ -182,7 +182,7 @@ class MAPPO(object):
         ratios = torch.exp(new_log_probs - log_probs)
 
         catenated = torch.cat([ratios * advantages,
-            torch.clip(ratios, 1 - margin, 1 + margin) * advantages)], dim=1)
+            torch.clip(ratios, 1 - margin, 1 + margin) * advantages], dim=1)
         clip_loss = torch.mean(torch.min(catenated, dim=1))
         entropy_loss = torch.mean(entropies)
 
