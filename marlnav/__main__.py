@@ -5,7 +5,7 @@ import torch
 
 from marlnav.animation import Animation
 from marlnav.environment import Env
-from marlnav.models import PPO
+from marlnav.models import MAPPO
 from marlnav.utils import load_config, plot_states_and_rews # NOTE: LAST ONE IS FOR TESTING. REMOVE LATER ?
 
 
@@ -136,7 +136,6 @@ if __name__ == '__main__':
         help='rendering option (no training), action: store_true' )
     parser.add_argument('-sa', '--sampling_style', type=str, default='sampler', # NOTE: FOR TESTING
         help='sampling style, should be either `policy` or `sampler`') # REMOVE THIS LATER ?
-
     parser.add_argument('-pl', '--plot_saving', action='store_true', # NOTE: FOR DEBUGGING/TESTING ONLY!
         help='Run test for states and rewards and save plots') # REMOVE THIS LATER ?
     parser.add_argument('-sn', '--sampler_num', type=int, default=0, # NOTE: FOR DEBUGGING/TESTING ONLY!
@@ -357,7 +356,37 @@ if __name__ == '__main__':
     # }
     # ############################################################################
 
+################################################################################
+# MAYBE REFACTOR THIS SECTION TO A FUNCTION WHICH IS DEFINED IN utils.py? ######
+
+
+    obs_size = 12 # NOTE: THIS MAY CHANGE IN THE FUTURE !
+              #(for example if velocity differences are added to observations)
+    model_params = {
+        'actor': {
+            'input_size': obs_size,
+            'hidden_size': args.hidden_size,
+        },
+        'critic': {
+            'input_size': obs_size * args.num_agents,
+            'hidden_size': args.hidden_size,
+        },
+        'num_agents': args.num_agents,
+        'device': device,
+        'lr': args.learning_rate,
+        'ent_const': args.ent_const,
+        'epsilon': args.epsilon,
+        'gamma': args.gamma,
+        'num_total': args.num_total,
+        'num_parallel': args.num_parallel,
+        'buffer_len': args.buffer_len,
+        'num_epochs': args.num_epochs,
+        'batch_size': args.batch_size,
+        'action_size': 2,
+        }
+
     params = {
+        'model': model_params,
         'animation': {
             'size_x': args.fig_size_x,
             'size_y': args.fig_size_y,
@@ -393,6 +422,7 @@ if __name__ == '__main__':
             'init': params['init'],
         },
     }
+################################################################################
 
     if args.rendering:
         mode = 'rendering'
