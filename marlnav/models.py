@@ -4,6 +4,7 @@ import torch
 from torch import nn
 from torch.distributions import MultivariateNormal
 from datetime import datetime
+from marlnav.utils import ActionScaler, ObsNormalizer
 
 
 class Actor(nn.Module):
@@ -58,7 +59,7 @@ class MAPPO(object):
         self.num_agents = params['num_agents']
         self.device = params['device']
         self.env = env
-        self.obs = self.env.observations() # set the inital observetions
+        self.obs = None
         self.actor = Actor(**params['actor']).to(self.device)
         self.critic = Critic(**params['critic']).to(self.device)
         self.actor_optimizer = Adam(
@@ -72,6 +73,8 @@ class MAPPO(object):
         self.num_epochs = params['num_epochs']
         self.batch_size = params['batch_size']
         self.buffer = []
+        self._normalize = ObsNormalizer(params['normalizer'])
+        self._scale_up = ActionScaler(params['scaler'])
         self._wpath = os.makedirs('weights', exist_ok=True)
         self._ppath = os.makedirs('plots', exist_ok=True)
         self._lpath = os.makedirs('logs', exist_ok=True)
@@ -85,16 +88,18 @@ class MAPPO(object):
     def get_data(self):
 
         self.buffer = []
+        self.obs = self._normalize(self.env.observations()) # set the inital observations
         for j in range(self.buffer_len):
             dist = self.actor(self.obs)
-            actions = dist.sample()
-            log_probs = dist.log_prob(actions)
-            actions = actions.view(-1, num_agents, action_size) # NOTE: ADD ACTION SCALLING HERE
-            new_obs, rewards, terminated, truncated = env.step(actions) # use scaled_actions here
-            done = torch.logical_or(terminated, truncated)   # non-scaled should be stored & used in training
-            values = self.critic(obs)
+            actions = dist.sample() # sampled actions should have values form -1. to 1.
+            log_probs = dist.log_prob(actions) # (or atleast most likely be in that range)
+            actions = actions.view(-1, num_agents, action_size) # sampled actions are used in training
+            scaled_actions = self._scale_up(actions) # up scaled actions (with true scale) are used by the env
+            new_obs, rewards, terminated, truncated = env.step(scaled_actions) # MAYBE CLIPPING IS NEEDED ?
+            done = torch.logical_or(terminated, truncated) # (since actions are sampled from gaussian dist)
+            values = self.critic(self.obs)
             self.buffer += [obs, actions, log_probs, values, rewards, done]
-            self.obs = new_obs
+            self.obs = self._normalize(new_obs) # only normalized observations (-1. to 1.) are used everywhere
 
         self._process_rewards()
 

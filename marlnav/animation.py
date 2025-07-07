@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import torch
 
+from marlnav.utils import ActionScaler, ObsNormalizer
 from matplotlib.animation import FuncAnimation
 from marlnav.utils import init_animation
 
@@ -29,21 +30,24 @@ class Animation:
         self.random = params['random']
         self.max_step = params['max_step']
         self.interval = params['interval']
+        self._normalize = ObsNormalizer(params['normalizer'])
+        self._scale_up = ActionScaler(params['scaler'])
 
     def update(self, frame_number):
         """Updates the agents' new positions to the `agents_scatter` object."""
         if self.sampling_style == 'policy':
-            obs = self.env.observations()
+            obs = self._normalize(self.env.observations())
             dist = self.actor(obs)
             if self.random:
                 actions = dist.sample()
             else:
                 actions = dist.loc
+            actions = self._scale_up(actions)
         elif self.sampling_style == 'sampler':
             actions = self.env.sample_actions()
 
         # self.env._move_agents(actions)
-        obs, rew, _, _ = self.env.step(actions)
+        obs, rew, _, _ = self.env.step(actions) # NOTE: no need to normalize obs here
         # print('STEP_NUM: ', self.env._step_num[self.parallel_index].item())
         # print('OBSTACLES DISTANCES: ', obs.obstacles_distances[self.parallel_index,:,:])
         # print('OTHERS DISTANCES: ', obs.others_distances[self.parallel_index,:,:])

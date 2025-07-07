@@ -221,6 +221,36 @@ def init_animation(params, agents_pos, obstacles_pos, target_pos):
     return fig, agents_scatter, obs_scatter1, obs_scatter2, target_scatter
 
 
+class ObsNormalizer(object):
+    """Callable for normalizing of the observations to values from -1. to 1."""
+
+    def __init__(self, params):
+        min_obs = torch.tensor(params['min_obs']).to(params['device']) # (2D vector)
+        max_obs = torch.tensor(params['max_obs']).to(params['device']) # (2D vector)
+        scale = 0.5 * (max_obs - min_obs)
+        self.mean = 0.5 * (min_obs + max_obs)
+        self.scale_tensor = torch.unsqueeze(torch.stack(
+            [scale for i in range(params['num_agents'])], dim=0), dim=0)
+
+    def __call__(obs):
+        return (obs - self.mean) / self.scale_tensor
+
+
+class ActionScaler(object):
+    """Callable for scaling up the model output actions to correct scale."""
+
+    def __init__(self, params):
+        min_action = torch.tensor(params['min_action']).to(params['device']) # (2D vector)
+        max_action = torch.tensor(params['max_action']).to(params['device']) # (2D vector)
+        scale = 0.5 * (max_action - min_action)
+        self.mean = 0.5 * (min_action + max_action)
+        self.scale_tensor = torch.unsqueeze(torch.stack(
+            [scale for i in range(params['num_agents'])], dim=0), dim=0)
+
+    def __call__(actions):
+        return (self.scale_tensor * actions) + self.mean
+
+
 def load_config(filename, dir):
     """Returns cofigurtation dictonary read from a configuration file."""
     config_file = os.path.join('config_files', dir,  filename)

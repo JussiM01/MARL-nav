@@ -421,6 +421,16 @@ if __name__ == '__main__':
             'sampler': params['sampler'],
             'init': params['init'],
         },
+        'normalizer': {
+            'device': device,
+            'min_obs': [...], # NOTE: CHECK THE MISSING 12 VALUES
+            'max_obs': [...], # NOTE: CHECK THE MISSING 12 VALUES
+        },
+        'scaler': {
+            'device': device,
+            'min_action': [-math.pi, args.min_accel], # NOTE: CHECK THE FIRST VALUE
+            'max_action': [math.pi, args.max_accel], # NOTE: CHECK THE FIRST VALUE
+        },
     }
 ################################################################################
 
