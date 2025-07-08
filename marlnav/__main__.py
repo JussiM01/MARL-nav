@@ -15,11 +15,9 @@ def main(params, mode):
     env = Env(params['env'])
 
     if mode == 'training':
-        num_total = params['num_total']
-        num_parallel = params['num_parallel']
-        num_agents = params['num_agents']
-        action_size = params['action_size']
-        buffer_len = params['buffer_len']
+        num_total = params['model']['num_total']
+        num_parallel = params['model']['num_parallel']
+        buffer_len = params['model']['buffer_len']
         num_repeats = num_total / (buffer_len * num_parallel)
         mappo = MAPPO(params['model'], env)
 
