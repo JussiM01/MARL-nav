@@ -358,10 +358,12 @@ if __name__ == '__main__':
 
 ################################################################################
 # MAYBE REFACTOR THIS SECTION TO A FUNCTION WHICH IS DEFINED IN utils.py? ######
+# ALSO THE INIT PARAMS ABOVE SHOULD BE MOVED THERE & MAYBE READ FROM A FILE ####
 
 
     obs_size = 12 # NOTE: THIS MAY CHANGE IN THE FUTURE !
               #(for example if velocity differences are added to observations)
+    max_dist = math.sqrt(args.max_x_value**2 + args.max_x_value**2)
     model_params = {
         'actor': {
             'input_size': obs_size,
@@ -423,13 +425,27 @@ if __name__ == '__main__':
         },
         'normalizer': {
             'device': device,
-            'min_obs': [...], # NOTE: CHECK THE MISSING 12 VALUES
-            'max_obs': [...], # NOTE: CHECK THE MISSING 12 VALUES
+            'min_obs': [
+                -math.pi, # target_angle
+                0., # target_distance
+                args.num_obstacles * [-math.pi],# obstacles_angles
+                args.num_obstacles * [0.], # obstacles_distances
+                (args.num_agents -1) * [-math.pi], # others_angles
+                (args.num_agents -1) * [0.] # others_distances
+                ],
+            'max_obs': [
+                math.pi, # target_angle
+                max_dist, # target_distance
+                args.num_obstacles * [math.pi],# obstacles_angles
+                args.num_obstacles * [max_dist], # obstacles_distances
+                (args.num_agents -1) * [math.pi], # others_angles
+                (args.num_agents -1) * [max_dist] # others_distances
+                ],
         },
         'scaler': {
             'device': device,
-            'min_action': [-math.pi, args.min_accel], # NOTE: CHECK THE FIRST VALUE
-            'max_action': [math.pi, args.max_accel], # NOTE: CHECK THE FIRST VALUE
+            'min_action': [-math.pi, args.min_accel],
+            'max_action': [math.pi, args.max_accel],
         },
     }
 ################################################################################
