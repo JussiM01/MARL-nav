@@ -222,7 +222,7 @@ def init_animation(params, agents_pos, obstacles_pos, target_pos):
 
 
 class ObsNormalizer(object):
-    """Callable for normalizing of the observations to values from -1. to 1."""
+    """Callable for concatenating and normalizing the observations."""
 
     def __init__(self, params):
         min_obs = torch.tensor(params['min_obs']).to(params['device']) # (2D vector)
@@ -233,7 +233,8 @@ class ObsNormalizer(object):
             [scale for i in range(params['num_agents'])], dim=0), dim=0)
 
     def __call__(obs):
-        return (obs - self.mean) / self.scale_tensor
+        obs = torch.cat(obs, dim=2)
+        return (obs - self.mean) / self.scale_tensor # scales the values to interval [-1., 1]
 
 
 class ActionScaler(object):
