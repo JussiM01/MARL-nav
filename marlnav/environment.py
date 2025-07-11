@@ -102,7 +102,8 @@ class Env(object):
 
     def _move_agents(self, actions):
         """Moves the agents' positions according to actions."""
-        self._rotate_directions(actions[:,:,0])
+        angles = torch.clamp(actions[:,:,0], min=-math.pi, max=math.pi)
+        self._rotate_directions(angles)
         directions = self.states[:,:,2:4]
         accelerations = torch.clamp(
             actions[:,:,-1:], min=self.min_accel, max=self.max_accel)
