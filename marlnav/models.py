@@ -103,7 +103,7 @@ class MAPPO(object):
 
         self._process_rewards()
 
-        if.self._mean_rew > self._max_rew:
+        if self._mean_rew > self._max_rew:
             torch.save(self.actor.state_dict(), save._actor_path)
             torch.save(self.critic.state_dict(), save._critic_path)
 
