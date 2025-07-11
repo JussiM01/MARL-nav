@@ -358,10 +358,36 @@ if __name__ == '__main__':
 # MAYBE REFACTOR THIS SECTION TO A FUNCTION WHICH IS DEFINED IN utils.py? ######
 # ALSO THE INIT PARAMS ABOVE SHOULD BE MOVED THERE & MAYBE READ FROM A FILE ####
 
+    max_dist = math.sqrt(args.max_x_value**2 + args.max_y_value**2)
+
+    min_obs = [-math.pi, 0.] # target_angle & target_distance
+    min_obs += args.num_obstacles * [-math.pi]# obstacles_angles
+    min_obs += args.num_obstacles * [0.] # obstacles_distances
+    min_obs += (args.num_agents -1) * [-math.pi] # others_angles
+    min_obs += (args.num_agents -1) * [0.] # others_distances
+
+    max_obs = [math.pi, max_dist] # target_angle & target_distance
+    max_obs += args.num_obstacles * [math.pi]# obstacles_angles
+    max_obs += args.num_obstacles * [max_dist] # obstacles_distances
+    max_obs += (args.num_agents -1) * [math.pi] # others_angles
+    max_obs += (args.num_agents -1) * [max_dist] # others_distances
+
+    normalizer_params = {
+        'device': device,
+        'num_agents': args.num_agents,
+        'min_obs': min_obs,
+        'max_obs': max_obs,
+        }
+
+    scaler_params = {
+        'device': device,
+        'num_agents': args.num_agents,
+        'min_action': [-math.pi, args.min_accel],
+        'max_action': [math.pi, args.max_accel],
+        }
 
     obs_size = 12 # NOTE: THIS MAY CHANGE IN THE FUTURE !
               #(for example if velocity differences are added to observations)
-    max_dist = math.sqrt(args.max_x_value**2 + args.max_x_value**2)
     model_params = {
         'actor': {
             'input_size': obs_size,
@@ -383,6 +409,8 @@ if __name__ == '__main__':
         'num_epochs': args.num_epochs,
         'batch_size': args.batch_size,
         'action_size': 2,
+        'normalizer': normalizer_params,
+        'scaler': scaler_params,
         }
 
     params = {
@@ -399,6 +427,8 @@ if __name__ == '__main__':
             'weights_file': args.weights_file,
             'max_step': args.max_step,
             'interval': args.interval,
+            'normalizer': normalizer_params,
+            'scaler': scaler_params,
         },
         'env': {
             'device': device,
@@ -420,30 +450,6 @@ if __name__ == '__main__':
             'soft_factor': args.soft_factor,
             'sampler': params['sampler'],
             'init': params['init'],
-        },
-        'normalizer': {
-            'device': device,
-            'min_obs': [
-                -math.pi, # target_angle
-                0., # target_distance
-                args.num_obstacles * [-math.pi],# obstacles_angles
-                args.num_obstacles * [0.], # obstacles_distances
-                (args.num_agents -1) * [-math.pi], # others_angles
-                (args.num_agents -1) * [0.] # others_distances
-                ],
-            'max_obs': [
-                math.pi, # target_angle
-                max_dist, # target_distance
-                args.num_obstacles * [math.pi],# obstacles_angles
-                args.num_obstacles * [max_dist], # obstacles_distances
-                (args.num_agents -1) * [math.pi], # others_angles
-                (args.num_agents -1) * [max_dist] # others_distances
-                ],
-        },
-        'scaler': {
-            'device': device,
-            'min_action': [-math.pi, args.min_accel],
-            'max_action': [math.pi, args.max_accel],
         },
     }
 ################################################################################
