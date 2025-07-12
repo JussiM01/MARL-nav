@@ -39,7 +39,6 @@ class TriangleIntitializer(object):
         self.tar_pos_x = params['tar_pos_x']
         self.tar_pos_y = params['tar_pos_y']
         self.num_obs = params['num_obs']
-
         self.noisy_ags = int(params['noisy_ags'])
         self.ags_std = params['ags_std']
         self.angle_range = params['angle_range']
@@ -232,7 +231,7 @@ class ObsNormalizer(object):
         self.scale_tensor = torch.unsqueeze(torch.stack(
             [scale for i in range(params['num_agents'])], dim=0), dim=0)
 
-    def __call__(obs):
+    def __call__(self, obs):
         obs = torch.cat(obs, dim=2)
         return (obs - self.mean) / self.scale_tensor # scales the values to interval [-1., 1]
 
@@ -248,7 +247,7 @@ class ActionScaler(object):
         self.scale_tensor = torch.unsqueeze(torch.stack(
             [scale for i in range(params['num_agents'])], dim=0), dim=0)
 
-    def __call__(actions):
+    def __call__(self, actions):
         return (self.scale_tensor * actions) + self.mean
 
 
