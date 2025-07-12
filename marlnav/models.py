@@ -3,6 +3,7 @@ import torch
 
 from torch import nn
 from torch.distributions import MultivariateNormal
+from torch.optim import Adam
 from datetime import datetime
 from marlnav.utils import ActionScaler, ObsNormalizer
 
@@ -24,7 +25,7 @@ class Actor(nn.Module):
         x = self.flatten(x)
         x = self.fc1(x)
         mu = torch.tanh(self.fc_mu(x))
-        std = F.softplus(self.fc_std(x))
+        std = nn.functional.softplus(self.fc_std(x))
         sigma = torch.vmap(torch.diag)(std) # NOTE: vmap is needed since std is a batch of vectors
         # NOTE: MAKE SURE SIGMA IS POSITVE (for example add 1e-12 to it?)
         dist = MultivariateNormal(mu, sigma)
@@ -36,7 +37,7 @@ class Critic(nn.Module):
     """Critic model for the multi-agent PPO algorithm."""
 
     def __init__(self, input_size, hidden_size):
-        super(Actor, self).__init__()
+        super(Critic, self).__init__()
         self.flatten = nn.Flatten()
         self.fc1 = nn.Linear(input_size, hidden_size)
         torch.nn.init.orthogonal_(self.fc1.weight)
@@ -57,6 +58,7 @@ class MAPPO(object):
 
     def __init__(self, params, env):
         self.num_agents = params['num_agents']
+        self.action_size = params['action_size']
         self.device = params['device']
         self.env = env
         self.obs = None
@@ -65,7 +67,7 @@ class MAPPO(object):
         self.actor_optimizer = Adam(
             self.actor.parameters(), lr=params['lr'], maximize=True)
         self.critic_optimizer = Adam(
-            self.critic.parameters(), lr=params['lr'], minimize=True)
+            self.critic.parameters(), lr=params['lr'], maximize=False)
         self.ent_const = params['ent_const']
         self.epsilon = params['epsilon']
         self.gamma = params['gamma']
@@ -75,12 +77,15 @@ class MAPPO(object):
         self.buffer = []
         self._normalize = ObsNormalizer(params['normalizer'])
         self._scale_up = ActionScaler(params['scaler'])
-        self._wpath = os.makedirs('weights', exist_ok=True)
-        self._ppath = os.makedirs('plots', exist_ok=True)
-        self._lpath = os.makedirs('logs', exist_ok=True)
-        self._time = now.strftime('YmdHMS')
+        self._wpath = os.path.join(os.getcwd(), 'weights')
+        self._ppath = os.path.join(os.getcwd(), 'plots')
+        self._lpath = os.path.join(os.getcwd(), 'logs')
+        os.makedirs(self._wpath, exist_ok=True)
+        os.makedirs(self._ppath, exist_ok=True)
+        os.makedirs(self._lpath, exist_ok=True)
+        self._time = datetime.now().strftime('%Y%m%d%H%M%S')
         self._actor_path = os.path.join(self._wpath, self._time + '_actor.pt')
-        self._critic_path = os.path.join(self._wpath, self._time + '_actor.pt')
+        self._critic_path = os.path.join(self._wpath, self._time + '_critic.pt')
         self._max_rew = float("-inf")
         self._mean_rew = 0.
 
@@ -90,15 +95,16 @@ class MAPPO(object):
         self.buffer = []
         self.obs = self._normalize(self.env.observations()) # set the inital observations
         for j in range(self.buffer_len):
+            print(j) # NOTE: FOR DEBUGGING. CHOOSE A BETTER PROGESS LOGGING FOR ACTUAL USE
             dist = self.actor(self.obs)
             actions = dist.sample() # sampled actions should have values form -1. to 1.
             log_probs = dist.log_prob(actions) # (or atleast most likely be in that range)
-            actions = actions.view(-1, num_agents, action_size) # sampled actions are used in training
+            actions = actions.view(-1, self.num_agents, self.action_size) # sampled actions are used in training
             scaled_actions = self._scale_up(actions) # up scaled actions (with true scale) are used by the env
-            new_obs, rewards, terminated, truncated = env.step(scaled_actions) # MAYBE CLIPPING IS NEEDED ?
+            new_obs, rewards, terminated, truncated = self.env.step(scaled_actions) # MAYBE CLIPPING IS NEEDED ?
             done = torch.logical_or(terminated, truncated) # (since actions are sampled from gaussian dist)
             values = self.critic(self.obs)
-            self.buffer += [obs, actions, log_probs, values, rewards, done]
+            self.buffer += [self.obs, actions, log_probs, values, rewards, done]
             self.obs = self._normalize(new_obs) # only normalized observations (-1. to 1.) are used everywhere
 
         self._process_rewards()
