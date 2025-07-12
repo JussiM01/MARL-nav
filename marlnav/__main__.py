@@ -18,7 +18,7 @@ def main(params, mode):
         num_total = params['model']['num_total']
         num_parallel = params['model']['num_parallel']
         buffer_len = params['model']['buffer_len']
-        num_repeats = num_total / (buffer_len * num_parallel)
+        num_repeats = num_total // (buffer_len * num_parallel)
         mappo = MAPPO(params['model'], env)
 
         for i in range(num_repeats):
@@ -136,7 +136,7 @@ if __name__ == '__main__':
         help='sampling style, should be either `policy` or `sampler`') # REMOVE THIS LATER ?
     parser.add_argument('-pl', '--plot_saving', action='store_true', # NOTE: FOR DEBUGGING/TESTING ONLY!
         help='Run test for states and rewards and save plots') # REMOVE THIS LATER ?
-    parser.add_argument('-sn', '--sampler_num', type=int, default=0, # NOTE: FOR DEBUGGING/TESTING ONLY!
+    parser.add_argument('-sn', '--sampler_num', type=int, default=-1, # NOTE: FOR DEBUGGING/TESTING ONLY!
         help='number code of the chosen params and mock_sampler') # REMOVE THIS LATER ?
     args = parser.parse_args()
 
