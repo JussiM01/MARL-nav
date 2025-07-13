@@ -22,6 +22,7 @@ def main(params, mode):
         mappo = MAPPO(params['model'], env)
 
         for i in range(num_repeats):
+            print('repeat', i+1) # NOTE: FOR DEBUGGING. CHOOSE A BETTER PROGESS LOGGING FOR ACTUAL USE
             mappo.get_data()
             mappo.train_actor()
             mappo.train_critic()

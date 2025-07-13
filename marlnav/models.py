@@ -58,6 +58,7 @@ class MAPPO(object):
 
     def __init__(self, params, env):
         self.num_agents = params['num_agents']
+        self.num_parallel = params['num_parallel']
         self.action_size = params['action_size']
         self.device = params['device']
         self.env = env
@@ -95,7 +96,7 @@ class MAPPO(object):
         self.buffer = []
         self.obs = self._normalize(self.env.observations()) # set the inital observations
         for j in range(self.buffer_len):
-            print(j) # NOTE: FOR DEBUGGING. CHOOSE A BETTER PROGESS LOGGING FOR ACTUAL USE
+            print('step', j+1) # NOTE: FOR DEBUGGING. CHOOSE A BETTER PROGESS LOGGING FOR ACTUAL USE
             dist = self.actor(self.obs)
             actions = dist.sample() # sampled actions should have values form -1. to 1.
             log_probs = dist.log_prob(actions) # (or atleast most likely be in that range)
@@ -104,13 +105,13 @@ class MAPPO(object):
             new_obs, rewards, terminated, truncated = self.env.step(scaled_actions) # MAYBE CLIPPING IS NEEDED ?
             done = torch.logical_or(terminated, truncated) # (since actions are sampled from gaussian dist)
             values = self.critic(self.obs)
-            self.buffer += [self.obs, actions, log_probs, values, rewards, done]
+            self.buffer += [[self.obs, actions, log_probs, values, rewards, done]]
             self.obs = self._normalize(new_obs) # only normalized observations (-1. to 1.) are used everywhere
 
         self._process_rewards()
 
         if self._mean_rew > self._max_rew:
-            torch.save(self.actor.state_dict(), save._actor_path)
+            torch.save(self.actor.state_dict(), save._actor_path) # CONTINUE DEBUGGING HERE (save not defined?)
             torch.save(self.critic.state_dict(), save._critic_path)
 
         #############################
@@ -119,18 +120,19 @@ class MAPPO(object):
 
     def _process_rewards(self):
 
-        curr_rew = torch.zeros([num_parallel], dtype=float).to(self.device)
+        curr_rew = torch.zeros([self.num_parallel], dtype=float).to(self.device)
         # Changing the rewards to cummulative rewards in a backward loop:
         for i in range(self.buffer_len - 1, -1, -1):
             rew, done = self.buffer[i][-2], self.buffer[i][-1]
+            print(done)
             curr_rew = torch.where(done, 0., rew + self.gamma * curr_rew)
             self.buffer[i][-2] = curr_rew
 
         std, mean_rew = torch.std_mean(
-            [self.buffer[i][-2] for i in range(self.buffer_len)])
+            torch.cat([self.buffer[i][-2] for i in range(self.buffer_len)]))
 
         for i in range(self.buffer_len): # Normalizing the rewards
-            self.buffer[i][-2] = (self.buffer[i][-2] - avg_rew) / (std + 1e-12)
+            self.buffer[i][-2] = (self.buffer[i][-2] - mean_rew) / (std + 1e-12)
 
         self._mean_rew = mean_rew
 
@@ -140,6 +142,7 @@ class MAPPO(object):
         for i in range(self.num_epochs):
             print('Epoch {0}.\n'.format(j+1))
             for j in range(self.buffer_len // self.batch_size):
+                print('batch', j+1) # NOTE: FOR DEBUGGING. CHOOSE A BETTER PROGESS LOGGING FOR ACTUAL USE
                 start = j * batch_size
                 if start + self.batch_size < self.buffer_len:
                     end = start + self.batch_size
@@ -157,6 +160,7 @@ class MAPPO(object):
         for i in range(self.num_epochs):
             print('Epoch {0}.\n'.format(j+1))
             for j in range(self.buffer_len // self.batch_size):
+                print('batch', j+1) # NOTE: FOR DEBUGGING. CHOOSE A BETTER PROGESS LOGGING FOR ACTUAL USE
                 start = j * batch_size
                 if start + self.batch_size < self.buffer_len:
                     end = start + self.batch_size
