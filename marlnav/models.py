@@ -111,8 +111,8 @@ class MAPPO(object):
         self._process_rewards()
 
         if self._mean_rew > self._max_rew:
-            torch.save(self.actor.state_dict(), save._actor_path) # CONTINUE DEBUGGING HERE (save not defined?)
-            torch.save(self.critic.state_dict(), save._critic_path)
+            torch.save(self.actor.state_dict(), self._actor_path)
+            torch.save(self.critic.state_dict(), self._critic_path)
 
         #############################
         # Add here progress logging #
@@ -135,15 +135,16 @@ class MAPPO(object):
             self.buffer[i][-2] = (self.buffer[i][-2] - mean_rew) / (std + 1e-12)
 
         self._mean_rew = mean_rew
+        print('MEAN_REW', mean_rew.item())
 
     def train_actor(self):
 
         print('Training the actor ({0} epochs).\n'.format(self.num_epochs))
         for i in range(self.num_epochs):
-            print('Epoch {0}.\n'.format(j+1))
+            print('Epoch {0}.\n'.format(i+1))
             for j in range(self.buffer_len // self.batch_size):
                 print('batch', j+1) # NOTE: FOR DEBUGGING. CHOOSE A BETTER PROGESS LOGGING FOR ACTUAL USE
-                start = j * batch_size
+                start = j * self.batch_size
                 if start + self.batch_size < self.buffer_len:
                     end = start + self.batch_size
                 else:
@@ -153,15 +154,16 @@ class MAPPO(object):
                 loss = self._actor_loss(mini_batch)
                 loss.backward()
                 self.actor_optimizer.step()
+                print('ACTOR LOSS', loss.item()) # NOTE: FOR DEBUGGING. CHOOSE A BETTER PROGESS LOGGING FOR ACTUAL USE
 
     def train_critic(self):
 
         print('Training the critic ({0} epochs).\n'.format(self.num_epochs))
         for i in range(self.num_epochs):
-            print('Epoch {0}.\n'.format(j+1))
+            print('Epoch {0}.\n'.format(i+1))
             for j in range(self.buffer_len // self.batch_size):
                 print('batch', j+1) # NOTE: FOR DEBUGGING. CHOOSE A BETTER PROGESS LOGGING FOR ACTUAL USE
-                start = j * batch_size
+                start = j * self.batch_size
                 if start + self.batch_size < self.buffer_len:
                     end = start + self.batch_size
                 else:
@@ -171,6 +173,7 @@ class MAPPO(object):
                 loss = self._critic_loss(mini_batch)
                 loss.backward()
                 self.critic_optimizer.step()
+                print('CRITIC LOSS', loss.item()) # NOTE: FOR DEBUGGING. CHOOSE A BETTER PROGESS LOGGING FOR ACTUAL USE
 
     def get_results(self):
 
@@ -179,17 +182,22 @@ class MAPPO(object):
     def _actor_loss(self, mini_batch):
 
         size = len(mini_batch)
-        obs = torch.cat([batch[i][0] for i in range(size)], dim=0)
-        actions = torch.cat([batch[i][1] for i in range(size)], dim=0)
-        log_probs = torch.cat([batch[i][2] for i in range(n)], dim=0)
-        values = torch.cat([batch[i][3] for i in range(size)], dim=0)
+        obs = torch.cat([mini_batch[i][0] for i in range(size)], dim=0)
+        actions = torch.cat([mini_batch[i][1] for i in range(size)], dim=0)
+        log_probs = torch.cat([mini_batch[i][2] for i in range(size)], dim=0)
+        values = torch.cat([mini_batch[i][3] for i in range(size)], dim=0)
         rewards = torch.cat([mini_batch[i][4] for i in range(size)], dim=0)
 
-        dist = ppo.actor(obs)
+        dist = self.actor(obs)
+        actions = actions.view(
+            self.num_parallel * self.num_agents * size, self.action_size)
         new_log_probs = dist.log_prob(actions)
         entropies = dist.entropy()
 
+        print('r', rewards.shape) # SHAPE: (batch_size)
+        print('v', values.shape) # SHAPE: (batch_size, 1)
         advantages = rewards - values
+        print('a.shape', advantages.shape)
         advantages = advantages.repeat(self.num_agents)
 
         margin = self.epsilon # NOTE: IS ANNEALING NEEDED & SHOULD THIS BE A DIFFERENT EPSILON ?
