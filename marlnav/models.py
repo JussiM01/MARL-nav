@@ -1,5 +1,6 @@
 import os
 import torch
+import matplotlib.pyplot as plt
 
 from torch import nn
 from torch.distributions import MultivariateNormal
@@ -89,6 +90,11 @@ class MAPPO(object):
         self._critic_path = os.path.join(self._wpath, self._time + '_critic.pt')
         self._max_rew = float("-inf")
         self._mean_rew = 0.
+        self._logs = {
+            'mean_rews': [],
+            'actor': [],
+            'critic': [],
+            }
 
     @torch.no_grad()
     def get_data(self):
@@ -114,17 +120,12 @@ class MAPPO(object):
             torch.save(self.actor.state_dict(), self._actor_path)
             torch.save(self.critic.state_dict(), self._critic_path)
 
-        #############################
-        # Add here progress logging #
-        #############################
-
     def _process_rewards(self):
 
         curr_rew = torch.zeros([self.num_parallel], dtype=float).to(self.device)
         # Changing the rewards to cummulative rewards in a backward loop:
         for i in range(self.buffer_len - 1, -1, -1):
             rew, done = self.buffer[i][-2], self.buffer[i][-1]
-            print(done)
             curr_rew = torch.where(done, 0., rew + self.gamma * curr_rew)
             self.buffer[i][-2] = curr_rew
 
@@ -136,6 +137,7 @@ class MAPPO(object):
 
         self._mean_rew = mean_rew
         print('MEAN_REW', mean_rew.item())
+        self._logs['mean_rews'] += [mean_rew.item()]
 
     def train_actor(self):
 
@@ -143,7 +145,7 @@ class MAPPO(object):
         for i in range(self.num_epochs):
             print('Epoch {0}.\n'.format(i+1))
             for j in range(self.buffer_len // self.batch_size):
-                print('batch', j+1) # NOTE: FOR DEBUGGING. CHOOSE A BETTER PROGESS LOGGING FOR ACTUAL USE
+                print('BATCH', j+1) # NOTE: FOR DEBUGGING. CHOOSE A BETTER PROGESS LOGGING FOR ACTUAL USE
                 start = j * self.batch_size
                 if start + self.batch_size < self.buffer_len:
                     end = start + self.batch_size
@@ -155,6 +157,7 @@ class MAPPO(object):
                 loss.backward()
                 self.actor_optimizer.step()
                 print('ACTOR LOSS', loss.item()) # NOTE: FOR DEBUGGING. CHOOSE A BETTER PROGESS LOGGING FOR ACTUAL USE
+                self._logs['actor'] += [loss.item()]
 
     def train_critic(self):
 
@@ -162,7 +165,7 @@ class MAPPO(object):
         for i in range(self.num_epochs):
             print('Epoch {0}.\n'.format(i+1))
             for j in range(self.buffer_len // self.batch_size):
-                print('batch', j+1) # NOTE: FOR DEBUGGING. CHOOSE A BETTER PROGESS LOGGING FOR ACTUAL USE
+                print('BATCH', j+1) # NOTE: FOR DEBUGGING. CHOOSE A BETTER PROGESS LOGGING FOR ACTUAL USE
                 start = j * self.batch_size
                 if start + self.batch_size < self.buffer_len:
                     end = start + self.batch_size
@@ -174,10 +177,34 @@ class MAPPO(object):
                 loss.backward()
                 self.critic_optimizer.step()
                 print('CRITIC LOSS', loss.item()) # NOTE: FOR DEBUGGING. CHOOSE A BETTER PROGESS LOGGING FOR ACTUAL USE
+                self._logs['critic'] += [loss.item()]
 
     def get_results(self):
 
-        raise NotImplementedError
+        rew_file = os.path.join(self._ppath, self._time + '_mean_rews.png')
+        act_file = os.path.join(self._ppath, self._time + '_act_loss.png')
+        cri_file = os.path.join(self._ppath, self._time + '_cri_loss.png')
+
+        self._create_plot(
+            self._logs['mean_rews'], 'rollot_num', 'Mean Rewards', rew_file)
+        self._create_plot(
+            self._logs['actor'], 'batch_num', 'Actor Losses', act_file)
+        self._create_plot(
+            self._logs['critic'], 'batch_num', 'Critic Losses', cri_file)
+
+    def _create_plot(self, stats, xlabel, title, filename):
+
+        fig, ax = plt.subplots(1, 1)
+        ax.set(xlabel=xlabel, ylabel='value')
+        ax.plot(stats)
+        fig.suptitle(title)
+        fig.savefig(filename)
+
+        #########################################
+        # Add here logs saving to file txt-file #
+        # & save all params to JSON-file        #
+        #########################################
+
 
     def _actor_loss(self, mini_batch):
 
@@ -194,19 +221,18 @@ class MAPPO(object):
         new_log_probs = dist.log_prob(actions)
         entropies = dist.entropy()
 
-        print('r', rewards.shape) # SHAPE: (batch_size)
-        print('v', values.shape) # SHAPE: (batch_size, 1)
-        advantages = rewards - values
-        print('a.shape', advantages.shape)
-        advantages = advantages.repeat(self.num_agents)
+        rewards = rewards.repeat(self.num_agents)
+        values = torch.squeeze(values).repeat(self.num_agents)
+        advantages = rewards - torch.squeeze(values)
 
         margin = self.epsilon # NOTE: IS ANNEALING NEEDED & SHOULD THIS BE A DIFFERENT EPSILON ?
         # margin = self.epsilon * annealing # NOTE: WHERE THESE COME ?! (should this be differnt epsilon?)
         ratios = torch.exp(new_log_probs - log_probs)
 
-        catenated = torch.cat([ratios * advantages,
-            torch.clip(ratios, 1 - margin, 1 + margin) * advantages], dim=1)
-        clip_loss = torch.mean(torch.min(catenated, dim=1))
+        clip_loss = torch.mean(
+            torch.minimum(ratios * advantages,
+                torch.clip(ratios, 1 - margin, 1 + margin) * advantages)
+            )
         entropy_loss = torch.mean(entropies)
 
         return clip_loss + self.ent_const * entropy_loss
@@ -217,13 +243,13 @@ class MAPPO(object):
         obs = torch.cat([mini_batch[i][0] for i in range(size)], dim=0)
         values = torch.cat([mini_batch[i][3] for i in range(size)], dim=0)
         rewards = torch.cat([mini_batch[i][4] for i in range(size)], dim=0)
-        new_values = self.critic(obs)
 
+        values = torch.squeeze(values)
+        new_values = torch.squeeze(self.critic(obs))
         diff = (new_values - rewards)**2
         clamped = torch.clamp(new_values, min=(values - self.epsilon), # CHECK THAT THIS IS THE RIGHT EPSILON !
             max=(values + self.epsilon))
         clamped_diff = (clamped - rewards)**2
-        critic_loss = torch.mean( # NOTE: assumes that len(shape) = 1 for both
-            torch.max(torch.cat([diff, clamped_diff], dim=1), dim=1))
+        critic_loss = torch.mean(torch.maximum(diff, clamped_diff))
 
         return critic_loss
