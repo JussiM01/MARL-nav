@@ -5,7 +5,7 @@ import torch
 
 from marlnav.animation import Animation
 from marlnav.environment import Env
-from marlnav.models import MAPPO
+from marlnav.models import MAPPO, Actor
 from marlnav.utils import load_config, plot_states_and_rews # NOTE: LAST ONE IS FOR TESTING. REMOVE LATER ?
 
 
@@ -31,12 +31,12 @@ def main(params, mode):
     elif mode == 'rendering':
         style = params['animation']['sampling_style']
         if style == 'policy': # NOTE: REFACTOR THIS ELSEWHERE (or parts of it) ?
-            actor = Actor(**params['model']['actor']).to(params['device'])
+            actor = Actor(**params['model']['actor']).to(params['env']['device'])
             filename = os.path.join(
-                '.weights', params['animation']['weights_file']) # ADD EXCEPTION HANDLING ? (missing file)
-            model.load_state_dict(
+                os.getcwd(), 'weights', params['animation']['weights_file']) # ADD EXCEPTION HANDLING ? (missing file)
+            actor.load_state_dict(
                 torch.load(filename, weights_only=True))
-            model.eval()
+            actor.eval()
             renderer = Animation(env, params['animation'], actor=actor)
         elif style == 'sampler':
             renderer = Animation(env, params['animation'])
@@ -421,6 +421,8 @@ if __name__ == '__main__':
             'size_y': args.fig_size_y,
             'x_max': args.max_x_value,
             'y_max': args.max_y_value,
+            'num_agents': args.num_agents,
+            'action_size': 2,
             'parallel_index': args.parallel_index,
             'agent_index': args.agent_index, # NOTE: USED ONLY FOR REWARDS PLOTTING
             'sampling_style': args.sampling_style,
