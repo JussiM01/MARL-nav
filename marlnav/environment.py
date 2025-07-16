@@ -2,68 +2,77 @@ import math
 import numpy
 import torch
 
-from marlnav.utils import random_states, action_sampler, Observations
+from marlnav.utils import init_sampler, action_sampler, Observations
 
 
-class DynamicsModel(object):
-    """Batched model for the agents' states and the environment."""
+class Env(object):
+    """Parallelized model for the agents' states and the environment."""
 
     def __init__(self, params):
 
         self.params = params
         self.device = params['device']
-        self.batch_size = params['batch_size']
+        self.num_parallel = params['num_parallel']
         self.num_agents = params['num_agents']
         self.num_obstacles = params['num_obstacles'] # NOTE: ADD THIS TO main.py (args & params)
         self.max_step = params['max_step']
         self.episode_len = params['episode_len']
-        self.init = params['init']
+        self._init_sampler = init_sampler(params['init'])
         self._sampler = action_sampler(params['sampler'])
         self._others_inds = torch.tensor(
             [[i for i in range(self.num_agents) if i != j]
               for j in range(self.num_agents)]).to(self.device) # NOTE: [[]] if self.num_agents == 1
 
-        states, obstacles, target = random_states(self.init) # NOTE: REFACTOR THIS (and _reinit)!
+        states, obstacles, target = self._init_sampler() # NOTE: REFACTOR THIS (and _reinit)!
 
         self.states = states
         self.obstacles = obstacles
         self.target = target
 
+        self.min_speed = params['min_speed']
+        self.max_speed = params['max_speed']
+        self.min_accel = params['min_accel']
+        self.max_accel = params['max_accel']
+
         # Counters for truncation and termination
-        self._step_num = torch.zeros([self.batch_size]).to(self.device)
-        self._reinit_mask = torch.zeros([self.batch_size]).to(self.device)
+        self._step_num = torch.zeros([self.num_parallel]).to(self.device)
+        self._terminates = torch.tensor(self.num_parallel*[False]).to(self.device)
+        self._reinit_mask = torch.zeros([self.num_parallel]).to(self.device)
 
         # Reward weight factors
-        self._collision_factor = params['collision_factor']
+        self._risk_factor = params['risk_factor']
         self._distance_factor = params['distance_factor']
         self._heading_factor = params['heading_factor']
         self._target_factor = params['target_factor']
+        self._soft_factor = params['soft_factor']
 
         # Geometric attributes
-        self._ob_coll_dist = 10.
+        self._ob_risk_dist = 60.
+        self._ag_risk_dist = 15.
+        self._ob_coll_dist = 50.
         self._ag_coll_dist = 5.
-        self._agents_min_d = 10.
-        self._agents_max_d = 25.
+        self._agents_min_d = 30.
+        self._agents_max_d = 50.
         self._max_at_prop_d = 2 # NOTE: IS THIS NEEDED ?
         self._max_angle_diff = math.pi/8
-        self._target_radius = 25.
+        self._target_radius = 30.
         self._cap_distance = 0.1
 
     def reset(self):
         """Resets the agents' and env states, returns observations and info."""
-        self._reinit_mask = torch.ones([self.batch_size]).to(self.device)
+        self._reinit_mask = torch.ones([self.num_parallel]).to(self.device)
 
-        return self._obsevations(), self.params
+        return self.observations(), self.params
 
     def _reinit(self):
         """Reinits the env's for terminated and truncated indeces."""
-        states, obstacles, target = random_states(self.init)
+        states, obstacles, target = self._init_sampler()
 
         self.states = self._reinit_update(self.states, states)
         self.obstacles = self._reinit_update(self.obstacles, obstacles)
         self.target = self._reinit_update(self.target, target)
         self._step_num = self._reinit_update(
-            self._step_num, torch.zeros([self.batch_size]).to(self.device))
+            self._step_num, torch.zeros([self.num_parallel]).to(self.device))
 
     def _reinit_update(self, old_vars, new_vars):
         """Changes new values based on reinit_mask rows (1 new, 0 old)."""
@@ -75,34 +84,39 @@ class DynamicsModel(object):
         """Updates the states and returns observations, rewards, terminated,
         truncated and info tensors."""
         self._move_agents(actions)
-        self._step_num += torch.ones([self.batch_size]).to(self.device)
+        self._step_num += torch.ones([self.num_parallel]).to(self.device)
         truncated = (self._step_num > self.episode_len -1)
-        observations = self._observations()
+        observations = self.observations()
         rewards, terminated = self._rews_and_terms(observations)
+
         is_finished = torch.logical_or(truncated, terminated)
         self._reinit_mask = torch.where(is_finished, 1, 0)
-        self._reinit()
+        self._reinit() # reinit envs for terminated parallel indeces and use
+        observations = self.observations() # observations from reinited states
 
-        # return (torch.cat(observations, dim=2), rewards, terminated, truncated,
-        #         self.params)
-        return observations, rewards, terminated, truncated, self.params # NOTE: CAT OBSERVATIONS LATER & ADD INFO PARAMS
+        return observations, rewards, terminated, truncated # NOTE: CAT OBSERVATIONS LATER & ADD INFO PARAMS
 
     def sample_actions(self):
-        """Samples an action batch."""
+        """Samples an action tensor."""
         return self._sampler()
 
     def _move_agents(self, actions):
         """Moves the agents' positions according to actions."""
-        self._rotate_directions(actions)
+        angles = torch.clamp(actions[:,:,0], min=-math.pi, max=math.pi)
+        self._rotate_directions(angles)
         directions = self.states[:,:,2:4]
-        velocities = self.states[:,:,4:5]
-        self.states[:,:,:2] += directions * velocities
+        accelerations = torch.clamp(
+            actions[:,:,-1:], min=self.min_accel, max=self.max_accel)
+        speeds = torch.clamp(self.states[:,:,4:5] + accelerations,
+            min=self.min_speed, max=self.max_speed)
+        self.states[:,:,4:5] = speeds
+        self.states[:,:,:2] += directions * speeds
 
-    def _rotate_directions(self, actions):
-        """Rotates the directions of the whole states batch."""
+    def _rotate_directions(self, angles):
+        """Rotates the directions of the whole states tensor."""
         directions = self.states[:,:,2:4]
         self.states[:,:,2:4] = torch.vmap(torch.vmap(
-            self._rotate))(directions, actions)
+            self._rotate))(directions, angles)
 
     def _rotate(self, direction_vector, angle):
         """Rotates the agent's direction by the given angle."""
@@ -112,7 +126,7 @@ class DynamicsModel(object):
 
         return torch.matmul(rotation_matrix, direction_vector)
 
-    def _observations(self):
+    def observations(self):
         """Calculates and returns the observations tensor."""
         target_angle = torch.stack([self._get_angles(self.states[:,i,:2],
             self.target, self.states[:,i,2:4])
@@ -159,9 +173,13 @@ class DynamicsModel(object):
 
     def _rews_and_terms(self, observations): # NOTE: REFACTOR TO USE HELPER METHODS
 
-        obstacle_collisions = self._collision_loss(
+        obstacle_risks = self._in_area_detect(
+            observations.obstacles_distances, self._ob_risk_dist)
+        agent_risks = self._in_area_detect(
+            observations.others_distances, self._ag_risk_dist)
+        obstacle_collisions = self._in_area_detect(
             observations.obstacles_distances, self._ob_coll_dist)
-        agent_collisions = self._collision_loss(
+        agent_collisions = self._in_area_detect(
             observations.others_distances, self._ag_coll_dist)
         in_target_area = torch.where(
             observations.target_distance < self._target_radius, 1., 0.)
@@ -170,28 +188,38 @@ class DynamicsModel(object):
             self._agents_max_d, self._max_at_prop_d) # NOTE: DOES THE METHOD REALLY NEED THE LAST PARAMETER ?
         heading_scores = self._heading_reward(
             observations.target_angle, self._max_angle_diff)
+        soft_score = self._soft_reward(observations.target_distance)
 
+        risks = torch.clamp(obstacle_risks + agent_risks, max=1)
         collisions = torch.clamp(obstacle_collisions + agent_collisions, max=1)
         atleast_1_coll, _ = torch.max(collisions, dim=1)
         all_in_target, _ = torch.min(in_target_area, dim=1)
 
-        # terminated = torch.squeeze(all_in_target) > 0 # NOTE: TEST THIS FIRST
-        # terminated = atleast_1_coll > 0 # NOTE: TEST THEN THIS
-        terminated = (atleast_1_coll + torch.squeeze(all_in_target) > 0) # THIS SHOULD BE USED FINALLY!
+        terminated = atleast_1_coll > 0
+        terminated = torch.logical_or(terminated, self._terminates)
 
-        coll_loss = self._collision_factor * collisions
+        # Set envs where agents have reached the target to terminate in the next
+        # step (since cummulative reward will be zeroed at the terminal step)
+        to_terminate = torch.squeeze(all_in_target) > 0
+        self._terminates = torch.logical_and(~self._terminates, to_terminate)
+        # Only previously False indeces are set to True based on 'to_terminate'
+        # so that the reinit is done only ones after the target is reached.
+
+        risk_loss = self._risk_factor * risks
         distance_rew = self._distance_factor * distance_scores
         heading_rew = self._heading_factor * heading_scores
         target_rew = self._target_factor * all_in_target.expand(
-            size=(self.batch_size, self.num_agents))
-        reward = target_rew + heading_rew + distance_rew -coll_loss
+            size=(self.num_parallel, self.num_agents))
+        soft_rew = self._soft_factor * soft_score
+        reward = target_rew + heading_rew + distance_rew + soft_rew -risk_loss
 
-        return reward, terminated
+        return torch.mean(reward, dim=1), terminated
+        # return reward, terminated # NOTE: USE THIS FOR DEBUGGING/TESTING NEW REWARDS
 
-    def _collision_loss(self, distances, collision_dist): # INPUT SHAPE: (batch_size, num_agents, ...)
-        """Returns a tensor of ones (collisions) and zeros (no collisions)."""
-        collisions = torch.where(distances < collision_dist, 1., 0.) # ... = num_objects or (num_agents-1)
-        detections, _ = torch.max(collisions, dim=2)
+    def _in_area_detect(self, distances, radius): # INPUT SHAPE: (num_parallel, num_agents, ...)
+        """Returns a tensor of ones (in area) and zeros (outside)."""
+        detections = torch.where(distances < radius, 1., 0.) # ... = num_objects or (num_agents-1)
+        detections, _ = torch.max(detections, dim=2)
 
         return detections
 
@@ -205,25 +233,32 @@ class DynamicsModel(object):
         return torch.div(capped_sums, max_value) # SCALED BY THE MAX VALUE, THIS IS NEEDED (might dominate other
                                                                             # rewards for large number of agents)
 
-    def _heading_reward(self, heading_diffs, max_angle_diff): # INPUT SHAPE: (batch_size, num_agents, 1)
+    def _heading_reward(self, heading_diffs, max_angle_diff): # INPUT SHAPE: (num_parallel, num_agents, 1)
         """Returns rewards for keeping the heading near target direction."""
         abs_diffs = torch.squeeze(torch.abs(heading_diffs), dim=2)
 
         return torch.where(abs_diffs < max_angle_diff, 1., 0.)
 
-    def _get_distances(self, own_pos_batch, others_pos_batch): # NOTE: FOR SINGLE AGENT BATCH
-        """Returns batch of distances between own and others positions."""
+    def _soft_reward(self, distances_to_target):
+        """Returns soft reward for closeness to the target area."""
+        scaled_distances = distances_to_target/self._target_radius
+        scaled_reward = torch.squeeze(2./(1. + scaled_distances**2), dim=2)
 
-        return torch.cdist(torch.unsqueeze(own_pos_batch, 1), others_pos_batch)
+        return torch.clamp(scaled_reward, max=1.)
 
-    def _get_angles(self, own_pos_batch, others_pos_batch, direction_batch): # NOTE: FOR SINGLE AGENT BATCH
-        """Returns a batch of oriented angle differences from the direction."""
-        difference_batch = others_pos_batch - torch.unsqueeze(own_pos_batch, dim=1)
-        normalized_batch = torch.nn.functional.normalize(difference_batch, dim=2)
-        dot_batch = torch.clamp(torch.einsum('bj,bij->bi', direction_batch,
-            normalized_batch), -1 + 1e-8, 1 - 1e-8)
-        dir_projections = torch.einsum('bi,bj->bij', dot_batch, direction_batch)
-        orthogonal_comps = normalized_batch - dir_projections
+    def _get_distances(self, own_pos_array, others_pos_array): # NOTE: FOR SINGLE AGENT PARALLEL ARRAY
+        """Returns tensor of distances between own and others positions."""
+
+        return torch.cdist(torch.unsqueeze(own_pos_array, 1), others_pos_array)
+
+    def _get_angles(self, own_pos_array, others_pos_array, direction_array): # NOTE: FOR SINGLE AGENT PARALLEL ARRAY
+        """Returns a tensor of oriented angle differences from the direction."""
+        difference_array = others_pos_array - torch.unsqueeze(own_pos_array, dim=1)
+        normalized_array = torch.nn.functional.normalize(difference_array, dim=2)
+        dot_array = torch.clamp(torch.einsum('bj,bij->bi', direction_array,
+            normalized_array), -1 + 1e-8, 1 - 1e-8)
+        dir_projections = torch.einsum('bi,bj->bij', dot_array, direction_array)
+        orthogonal_comps = normalized_array - dir_projections
         signs = torch.where(orthogonal_comps[:,:,0] > 0, -1., 1.)
 
-        return signs * torch.acos(dot_batch)
+        return signs * torch.acos(dot_array)
