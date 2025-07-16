@@ -60,11 +60,11 @@ class Animation:
         # # print('REWARDS: ', rew[parallel_ind,:]) # NOTE: USE THIS FOR DEBUGGING/TESTING NEW REWARDS
         # print('\n')
         updated_agents_pos = self.env.states[self.parallel_index,:,:2]
-        self.agents_scatter.set_offsets(updated_agents_pos.cpu().numpy()) # CONTINUE DEBUGGIN HERE !
-        
+        self.agents_scatter.set_offsets(updated_agents_pos.detach().cpu().numpy())
+
         updated_obs_pos = self.env.obstacles[self.parallel_index,:,:2]
-        self.obs_scatter1.set_offsets(updated_obs_pos.cpu().numpy()) # CONTINUE DEBUGGIN HERE !
-        self.obs_scatter2.set_offsets(updated_obs_pos.cpu().numpy()) # CONTINUE DEBUGGIN HERE !
+        self.obs_scatter1.set_offsets(updated_obs_pos.detach().cpu().numpy())
+        self.obs_scatter2.set_offsets(updated_obs_pos.detach().cpu().numpy())
 
         return (self.agents_scatter, self.obs_scatter1, self.obs_scatter2)
 
