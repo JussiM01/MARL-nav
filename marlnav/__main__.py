@@ -26,7 +26,7 @@ def main(params, mode):
             mappo.get_data()
             mappo.train_actor()
             mappo.train_critic()
-        mappo.get_results()
+        mappo.save_stats(params)
 
     elif mode == 'rendering':
         style = params['animation']['sampling_style']

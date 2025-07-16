@@ -1,3 +1,5 @@
+import csv
+import json
 import os
 import torch
 import matplotlib.pyplot as plt
@@ -179,7 +181,7 @@ class MAPPO(object):
                 print('CRITIC LOSS', loss.item()) # NOTE: FOR DEBUGGING. CHOOSE A BETTER PROGESS LOGGING FOR ACTUAL USE
                 self._logs['critic'] += [loss.item()]
 
-    def get_results(self):
+    def save_stats(self, full_params):
 
         rew_file = os.path.join(self._ppath, self._time + '_mean_rews.png')
         act_file = os.path.join(self._ppath, self._time + '_act_loss.png')
@@ -192,6 +194,22 @@ class MAPPO(object):
         self._create_plot(
             self._logs['critic'], 'batch_num', 'Critic Losses', cri_file)
 
+        par_file = os.path.join(self._lpath, self._time + '_params.json')
+
+        with open(par_file, 'w') as f:
+            json.dump(full_params, f, indent=4, sort_keys=True)
+
+        rew_logfile = os.path.join(self._lpath, self._time + '_mean_rews.csv')
+        act_logfile = os.path.join(self._lpath, self._time + '_act_loss.csv')
+        cri_logfile = os.path.join(self._lpath, self._time + '_cri_loss.csv')
+
+        self._create_logfile(
+            [[num] for num in self._logs['mean_rews']], rew_logfile)
+        self._create_logfile(
+            [[num] for num in self._logs['actor']], act_logfile)
+        self._create_logfile(
+            [[num] for num in self._logs['critic']], cri_logfile)
+
     def _create_plot(self, stats, xlabel, title, filename):
 
         fig, ax = plt.subplots(1, 1)
@@ -200,11 +218,12 @@ class MAPPO(object):
         fig.suptitle(title)
         fig.savefig(filename)
 
-        #########################################
-        # Add here logs saving to file txt-file #
-        # & save all params to JSON-file        #
-        #########################################
+    def _create_logfile(self, value_list, filename):
 
+        with open(filename, 'w', newline='') as f:
+            writer = csv.writer(f)
+            writer.writerow(['Value'])
+            writer.writerows(value_list)
 
     def _actor_loss(self, mini_batch):
 
