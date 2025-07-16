@@ -6,7 +6,7 @@ import torch
 from marlnav.animation import Animation
 from marlnav.environment import Env
 from marlnav.models import MAPPO, Actor
-from marlnav.utils import load_config, plot_states_and_rews # NOTE: LAST ONE IS FOR TESTING. REMOVE LATER ?
+from marlnav.utils import load_config, set_all_seeds, plot_states_and_rews # NOTE: LAST ONE IS FOR TESTING. REMOVE LATER ?
 
 
 def main(params, mode):
@@ -59,6 +59,8 @@ if __name__ == '__main__':
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
     # common args
+    parser.add_argument('-se', '--seed', type=int,
+        help='value of the random seed (optional, default is None).')
     parser.add_argument('-mx', '--max_x_value', type=float, default=1500.0,
         help='maximum value for the x-coordinates')
     parser.add_argument('-my', '--max_y_value', type=float, default=750.0,
@@ -456,6 +458,9 @@ if __name__ == '__main__':
         },
     }
 ################################################################################
+
+    if args.seed is not None:
+        set_all_seeds(args.seed)
 
     if args.rendering:
         mode = 'rendering'
