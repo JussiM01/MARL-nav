@@ -6,7 +6,7 @@ import torch
 from marlnav.animation import Animation, init_render
 from marlnav.environment import Env
 from marlnav.models import MAPPO
-from marlnav.utils import load_config, set_all_seeds, plot_states_and_rews # NOTE: LAST ONE IS FOR TESTING. REMOVE LATER ?
+from marlnav.utils import load_config, set_all_seeds, check_rews # NOTE: LAST ONE IS FOR TESTING. REMOVE LATER ?
 
 
 def main(params, mode):
@@ -31,8 +31,8 @@ def main(params, mode):
         renderer = init_render(env, params)
         renderer.run()
 
-    elif mode == 'plot_saving': # NOTE: FOR TESTING. REMOVE LATER ?
-        plot_states_and_rews(
+    elif mode == 'reward_check':
+        check_rews(
             env,
             params['animation']['max_step'],
             params['animation']['parallel_index'],
@@ -124,8 +124,8 @@ if __name__ == '__main__':
         help='rendering option (no training), action: store_true' )
     parser.add_argument('-sa', '--sampling_style', type=str, default='sampler', # NOTE: FOR TESTING
         help='sampling style, should be either `policy` or `sampler`') # REMOVE THIS LATER ?
-    parser.add_argument('-pl', '--plot_saving', action='store_true', # NOTE: FOR DEBUGGING/TESTING ONLY!
-        help='Run test for states and rewards and save plots') # REMOVE THIS LATER ?
+    parser.add_argument('-rc', '--reward_check', action='store_true', # NOTE: FOR DEBUGGING/TESTING ONLY!
+        help='Runs fixed dynamics for checking the rewards from saved plots') # REMOVE THIS LATER ?
     parser.add_argument('-sn', '--sampler_num', type=int, default=-1, # NOTE: FOR DEBUGGING/TESTING ONLY!
         help='number code of the chosen params and mock_sampler') # REMOVE THIS LATER ?
     args = parser.parse_args()
@@ -451,9 +451,9 @@ if __name__ == '__main__':
 
     if args.rendering:
         mode = 'rendering'
-    elif args.plot_saving:  # NOTE: FOR TESTING. REMOVE LATER ?
+    elif args.reward_check:  # NOTE: FOR TESTING. REMOVE LATER ?
         # params = load_config(...) # NOTE: CREATE THE STATE TEST CONFIG FILE.
-        mode = 'plot_saving'
+        mode = 'reward_check'
     else:
         mode = 'training'
 
