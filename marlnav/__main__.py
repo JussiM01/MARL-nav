@@ -3,15 +3,14 @@ import os
 import math
 import torch
 
-from marlnav.animation import Animation
+from marlnav.animation import Animation, init_render
 from marlnav.environment import Env
-from marlnav.models import MAPPO, Actor
+from marlnav.models import MAPPO
 from marlnav.utils import load_config, set_all_seeds, plot_states_and_rews # NOTE: LAST ONE IS FOR TESTING. REMOVE LATER ?
 
 
 def main(params, mode):
 
-    # NOTE: ADD THE RANDOM SEED SETTING HERE !
     env = Env(params['env'])
 
     if mode == 'training':
@@ -29,19 +28,7 @@ def main(params, mode):
         mappo.save_stats(params)
 
     elif mode == 'rendering':
-        style = params['animation']['sampling_style']
-        if style == 'policy': # NOTE: REFACTOR THIS ELSEWHERE (or parts of it) ?
-            actor = Actor(**params['model']['actor']).to(params['env']['device'])
-            filename = os.path.join(
-                os.getcwd(), 'weights', params['animation']['weights_file']) # ADD EXCEPTION HANDLING ? (missing file)
-            actor.load_state_dict(
-                torch.load(filename, weights_only=True))
-            actor.eval()
-            renderer = Animation(env, params['animation'], actor=actor)
-        elif style == 'sampler':
-            renderer = Animation(env, params['animation'])
-        else:
-            raise NotImplementedError
+        renderer = init_render(env, params)
         renderer.run()
 
     elif mode == 'plot_saving': # NOTE: FOR TESTING. REMOVE LATER ?
