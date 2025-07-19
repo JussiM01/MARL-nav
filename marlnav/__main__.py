@@ -3,7 +3,7 @@ import os
 import math
 import torch
 
-from marlnav.animation import Animation, init_render
+from marlnav.animation import init_render
 from marlnav.environment import Env
 from marlnav.models import MAPPO
 from marlnav.utils import load_config, set_all_seeds, check_rews # NOTE: LAST ONE IS FOR TESTING. REMOVE LATER ?
