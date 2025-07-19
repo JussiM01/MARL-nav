@@ -39,6 +39,11 @@ class Env(object):
         self._terminates = torch.tensor(self.num_parallel*[False]).to(self.device)
         self._reinit_mask = torch.zeros([self.num_parallel]).to(self.device)
 
+        # Couter for episode stats
+        self._num_trunc = 0
+        self._num_col = 0
+        self._num_tar = 0
+
         # Reward weight factors
         self._risk_factor = params['risk_factor']
         self._distance_factor = params['distance_factor']
@@ -86,6 +91,7 @@ class Env(object):
         self._move_agents(actions)
         self._step_num += torch.ones([self.num_parallel]).to(self.device)
         truncated = (self._step_num > self.episode_len -1)
+        self._num_trunc += torch.sum(truncated.long()).item() # Update truncated stats
         observations = self.observations()
         rewards, terminated = self._rews_and_terms(observations)
 
@@ -194,6 +200,10 @@ class Env(object):
         collisions = torch.clamp(obstacle_collisions + agent_collisions, max=1)
         atleast_1_coll, _ = torch.max(collisions, dim=1)
         all_in_target, _ = torch.min(in_target_area, dim=1)
+
+        # Update target reach and collision stats
+        self._num_tar += int(torch.sum(all_in_target).item())
+        self._num_col += int(torch.sum(atleast_1_coll).item())
 
         terminated = atleast_1_coll > 0
         terminated = torch.logical_or(terminated, self._terminates)
