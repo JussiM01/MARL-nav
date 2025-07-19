@@ -76,6 +76,7 @@ class Animation:
             repeat=False, interval=self.interval, blit=True)
         plt.show()
 
+
 def init_render(env, params):
 
     style = params['animation']['sampling_style']
