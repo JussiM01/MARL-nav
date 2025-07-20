@@ -355,6 +355,7 @@ def check_rews(env, num_steps, parallel_ind, agent_ind):
     dis_fac = env._distance_factor
     ris_fac = env._risk_factor
     sof_fac = env._soft_factor
+    bon_fac = env._bond_factor
 
     fig, ax = plt.subplots(1, 1)
     ax.set(xlabel='step number', ylabel='value')
@@ -362,7 +363,9 @@ def check_rews(env, num_steps, parallel_ind, agent_ind):
     fig.suptitle('Rewards, parallel index: {0}, agent index: {1}'.format(
         parallel_ind, agent_ind)
         + '\n Factors: tar {0}, hea {1}'.format(tar_fac, hea_fac)
-        + ', dis {0}, ris {1}, sof {2}'.format(dis_fac, ris_fac, sof_fac))
+        + ', dis {0}, ris {1}, sof {2} bof {3}'.format(
+            dis_fac, ris_fac, sof_fac, bon_fac))
     save_plot(fig, 'rewards_B{0}A{1}T{2}H{3}D{4}R{5}S{6}.png'.format(
-        parallel_ind, agent_ind, tar_fac, hea_fac, dis_fac, ris_fac, sof_fac),
+        parallel_ind, agent_ind, tar_fac, hea_fac, dis_fac, ris_fac, sof_fac,
+        bon_fac),
         'plots')
