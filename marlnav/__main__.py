@@ -98,6 +98,8 @@ if __name__ == '__main__':
         help='Weight factor for the target reward.')
     parser.add_argument('-sf', '--soft_factor', type=float, default=100., # NOTE: CHANGE THIS LATER?
         help='Weight factor for the smooth target distance reward.')
+    parser.add_argument('-bf', '--bond_factor', type=float, default=100., # NOTE: CHANGE THIS LATER?
+        help='Weight factor for the bond distance reward.')
 
     # model specific args
     parser.add_argument('-hs', '--hidden_size', type=int, default=50, # NOTE: CHANGE THIS LATER?
@@ -440,6 +442,7 @@ if __name__ == '__main__':
             'heading_factor': args.heading_factor,
             'target_factor': args.target_factor,
             'soft_factor': args.soft_factor,
+            'bond_factor': args.bond_factor,
             'sampler': params['sampler'],
             'init': params['init'],
         },

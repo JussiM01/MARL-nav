@@ -50,6 +50,7 @@ class Env(object):
         self._heading_factor = params['heading_factor']
         self._target_factor = params['target_factor']
         self._soft_factor = params['soft_factor']
+        self._bond_factor = params['bond_factor']
 
         # Geometric attributes
         self._ob_risk_dist = 60.
@@ -62,6 +63,8 @@ class Env(object):
         self._max_angle_diff = math.pi/8
         self._target_radius = 30.
         self._cap_distance = 0.1
+        self._bond_sharpness = 1. # Smaller values create more sharply peaked reward
+        self._ideal_dist = 40.
 
     def reset(self):
         """Resets the agents' and env states, returns observations and info."""
@@ -195,6 +198,7 @@ class Env(object):
         heading_scores = self._heading_reward(
             observations.target_angle, self._max_angle_diff)
         soft_score = self._soft_reward(observations.target_distance)
+        bond_score = self._bond_reward(observations.others_distances)
 
         risks = torch.clamp(obstacle_risks + agent_risks, max=1)
         collisions = torch.clamp(obstacle_collisions + agent_collisions, max=1)
@@ -221,7 +225,9 @@ class Env(object):
         target_rew = self._target_factor * all_in_target.expand(
             size=(self.num_parallel, self.num_agents))
         soft_rew = self._soft_factor * soft_score
-        reward = target_rew + heading_rew + distance_rew + soft_rew -risk_loss
+        bond_rew = self._bond_factor * bond_score
+        reward = (target_rew + heading_rew + distance_rew + soft_rew
+            + bond_rew -risk_loss)
 
         return torch.mean(reward, dim=1), terminated
         # return reward, terminated # NOTE: USE THIS FOR DEBUGGING/TESTING NEW REWARDS
@@ -255,6 +261,13 @@ class Env(object):
         scaled_reward = torch.squeeze(2./(1. + scaled_distances**2), dim=2)
 
         return torch.clamp(scaled_reward, max=1.)
+
+    def _bond_reward(self, distances_to_others):
+        """Returns soft reward for closeness to the ideal bond distance."""
+        diffs = distances_to_others - self._ideal_dist
+        scaled_diffs = diffs/self._bond_sharpness
+
+        return torch.mean(1./(1. + scaled_diffs**2), dim=2)
 
     def _get_distances(self, own_pos_array, others_pos_array): # NOTE: FOR SINGLE AGENT PARALLEL ARRAY
         """Returns tensor of distances between own and others positions."""
