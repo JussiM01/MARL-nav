@@ -219,6 +219,7 @@ class MAPPO(object):
         rew_logfile = os.path.join(self._lpath, self._time + '_mean_rews.csv')
         act_logfile = os.path.join(self._lpath, self._time + '_act_loss.csv')
         cri_logfile = os.path.join(self._lpath, self._time + '_cri_loss.csv')
+        epi_logfile = os.path.join(self._lpath, self._time + '_epi_stats.csv')
 
         self._create_logfile(
             [[num] for num in self._logs['mean_rews']], rew_logfile)
@@ -227,7 +228,7 @@ class MAPPO(object):
         self._create_logfile(
             [[num] for num in self._logs['critic']], cri_logfile)
 
-        self._save_epi_plot(epi_file)
+        self._save_epi_stats(epi_file, epi_logfile)
 
     def _create_plot(self, stats, xlabel, title, filename):
 
@@ -237,7 +238,7 @@ class MAPPO(object):
         fig.suptitle(title)
         fig.savefig(filename)
 
-    def _save_epi_plot(self, filename):
+    def _save_epi_stats(self, plotfile, logfile):
 
         fig, ax = plt.subplots(1, 1)
         ax.set(xlabel='rollout', ylabel='value')
@@ -249,7 +250,15 @@ class MAPPO(object):
             label='target reached')
         ax.legend()
         fig.suptitle('Episode endings')
-        fig.savefig(filename)
+        fig.savefig(plotfile)
+
+        num_rows = len(self._logs['epi_stats']['trunc']) # NOTE: MAYBE ADD self.num_repeats PARAM ?
+        with open(logfile, 'w', newline='') as f:
+            writer = csv.writer(f)
+            writer.writerow(['Truncated', 'Collisions', 'Target reached'])
+            writer.writerows([[self._logs['epi_stats']['trunc'][i],
+                self._logs['epi_stats']['col'][i],
+                self._logs['epi_stats']['tar'][i]] for i in range(num_rows)])
 
     def _create_logfile(self, value_list, filename):
 
