@@ -14,6 +14,290 @@ Observations = namedtuple('Observations', ['target_angle', 'target_distance',
     'obstacles_angles', 'obstacles_distances', 'others_angles',
     'others_distances'])
 
+triangle_params = { # NOTE: SHOULD BE LOADED FROM CONFIG-FILE
+    'init_method': 'triangle',
+    'ags_cent_x': 150.,
+    'ags_cent_y': 375.,
+    'ags_dist': 40.,
+    'tar_pos_x': 1350.,
+    'tar_pos_y': 375.,
+    'noisy_ags': False,
+    # 'noisy_ags': True, # TEST FIRST WITH THE STATIC AGENT STATES CASE
+    'ags_std': 0.01,
+    'angle_range': math.pi/6,
+    'obst_min_x': 500.,
+    'obst_max_x': 1000.,
+    'obst_min_y': 250.,
+    'obst_max_y': 500.
+    }
+
+mock_params0 = { # NOTE: SHOULD BE LOADED FROM CONFIG-FILE
+    'init_method': 'mock_init',
+    'mock_states': [
+        [
+        [550., 100., 0., 1., 0.],
+        [750., 100., 0., 1., 0.],
+        [950., 100., 0., 1., 5.]
+        ],
+        [
+        [550., 100., 0., 1., 0.],
+        [750., 100., 0., 1., 0.],
+        [950., 100., 0., 1., 5.]
+        ]],
+    'mock_obstacles': [
+        [
+        [1400., 375.],
+        ],
+        [
+        [1400., 375.],
+        ]], # NOTE: only one obstacle per parallel env (for now)
+    'mock_target': [
+        [
+        [1400., 700.],
+        ],
+        [
+        [1400., 700.],
+        ]]
+        }
+
+mock_params1 = { # NOTE: SHOULD BE LOADED FROM CONFIG-FILE
+    'init_method': 'mock_init',
+    'mock_states': [
+        [
+        [750. -300./math.sqrt(3), 375., 0., 1., 3./math.sin(math.pi/3)],
+        [750., 375., 0., 1., 3.],
+        [750. +300./math.sqrt(3), 375., 0., 1., 3./math.sin(math.pi/3)]
+        ],
+        [
+        [450, 675., 1., 0., 2*300.*math.sin(math.radians(0.9))],
+        [750., 675., 0., -1., 6.],
+        [1050., 675., -1., 0., 2*300.*math.sin(math.radians(0.9))]
+        ]],
+    'mock_obstacles': [
+        [
+        [900., 475.]
+        ], # NOTE: only one obstacle per parallel env (for now)
+        [
+        [750., 75.]
+        ]],
+    'mock_target': [
+        [
+        [750., 675.]
+        ],
+        [
+        [750., 475.]
+        ]]
+        }
+
+const_params = {
+    'sample_method': 'const_sampler', # TESTING FIRST THE CONSTANT ACTIONS CASE
+    }
+
+sampler0_params = {
+    'sampler_num': 0,
+    'sample_method': 'mock_sampler',
+    'actions':
+        [
+        [[0., 5.], [0., 0.1], [0., -0.05]],
+        [[0., 5.], [0., 0.1], [0., -100.]]
+        ],
+    }
+
+sampler1_params = {
+    'sampler_num': 1,
+    'sample_method': 'mock_sampler',
+    'actions':
+        [
+        [[0.,0.], [0., 0.], [0., 0.]],
+        [[-math.radians(1.8), 0.], [0., 0.], [math.radians(1.8), 0.]]
+        ],
+    }
+
+def set_normalizer_params(args, device):
+
+    max_dist = math.sqrt(args.max_x_value**2 + args.max_y_value**2)
+
+    min_obs = [-math.pi, 0.] # target_angle & target_distance
+    min_obs += args.num_obstacles * [-math.pi]# obstacles_angles
+    min_obs += args.num_obstacles * [0.] # obstacles_distances
+    min_obs += (args.num_agents -1) * [-math.pi] # others_angles
+    min_obs += (args.num_agents -1) * [0.] # others_distances
+
+    max_obs = [math.pi, max_dist] # target_angle & target_distance
+    max_obs += args.num_obstacles * [math.pi]# obstacles_angles
+    max_obs += args.num_obstacles * [max_dist] # obstacles_distances
+    max_obs += (args.num_agents -1) * [math.pi] # others_angles
+    max_obs += (args.num_agents -1) * [max_dist] # others_distances
+
+    normalizer_params = {
+        'device': device,
+        'num_agents': args.num_agents,
+        'min_obs': min_obs,
+        'max_obs': max_obs,
+        }
+
+    return normalizer_params
+
+
+def set_scaler_params(args, device):
+
+    scaler_params = {
+        'device': device,
+        'num_agents': args.num_agents,
+        'min_action': [-math.pi, args.min_accel],
+        'max_action': [math.pi, args.max_accel],
+        }
+
+    return scaler_params
+
+
+def set_model_params(args, device):
+
+    obs_size = 12 # NOTE: THIS MAY CHANGE IN THE FUTURE !
+              #(for example if velocity differences are added to observations)
+    model_params = {
+        'actor': {
+            'input_size': obs_size,
+            'hidden_size': args.hidden_size,
+        },
+        'critic': {
+            'input_size': obs_size * args.num_agents,
+            'hidden_size': args.hidden_size,
+        },
+        'num_agents': args.num_agents,
+        'device': device,
+        'lr': args.learning_rate,
+        'ent_const': args.ent_const,
+        'epsilon': args.epsilon,
+        'gamma': args.gamma,
+        'num_total': args.num_total,
+        'num_parallel': args.num_parallel,
+        'buffer_len': args.buffer_len,
+        'num_epochs': args.num_epochs,
+        'batch_size': args.batch_size,
+        'action_size': 2,
+        'normalizer': set_normalizer_params(args, device),
+        'scaler': set_scaler_params(args, device),
+        }
+
+    return model_params
+
+
+def set_animation_params(args, device):
+
+    animation_params = {
+        'size_x': args.fig_size_x,
+        'size_y': args.fig_size_y,
+        'x_max': args.max_x_value,
+        'y_max': args.max_y_value,
+        'num_agents': args.num_agents,
+        'action_size': 2,
+        'parallel_index': args.parallel_index,
+        'agent_index': args.agent_index, # NOTE: USED ONLY FOR REWARDS PLOTTING
+        'sampling_style': args.sampling_style,
+        'random': args.random,
+        'weights_file': args.weights_file,
+        'max_step': args.max_step,
+        'interval': args.interval,
+        'normalizer': set_normalizer_params(args, device),
+        'scaler': set_scaler_params(args, device),
+        }
+
+    return animation_params
+
+
+def set_init_params(args, device):
+
+    if args.sampler_num == -1:
+        init_params = triangle_params  # NOTE: SHOULD BE LOADED FROM CONFIG-FILE
+        init_params['num_parallel'] = args.num_parallel
+        init_params['num_obs'] = args.num_obstacles
+
+    elif args.sampler_num == 0:
+        init_params = mock_params0  # NOTE: SHOULD BE LOADED FROM CONFIG-FILE
+    elif args.sampler_num == 1:
+        init_params = mock_params1  # NOTE: SHOULD BE LOADED FROM CONFIG-FILE
+    else:
+        raise ValueError
+    init_params['device'] = device
+
+    return init_params
+
+
+def set_sampler_params(args, device):
+
+    if args.sampler_num == -1:
+        if args.sampling_style == 'policy':
+            return None
+        elif args.sampling_style == 'sampler':
+            sampler_params = const_params  # NOTE: SHOULD BE LOADED FROM CONFIG-FILE
+            sampler_params['num_parallel'] = args.num_parallel
+            sampler_params['num_agents'] = args.num_agents
+    elif args.sampler_num == 0:
+        sampler_params = sampler0_params  # NOTE: SHOULD BE LOADED FROM CONFIG-FILE
+        sampler_params['max_step'] = args.max_step
+    elif args.sampler_num == 1:
+        sampler_params = sampler1_params  # NOTE: SHOULD BE LOADED FROM CONFIG-FILE
+        sampler_params['max_step'] = args.max_step
+    else:
+        raise ValueError
+    sampler_params['device'] = device
+
+    return sampler_params
+
+
+def set_env_params(args, device):
+
+    env_params = {
+        'device': device,
+        'num_parallel': args.num_parallel,
+        'num_agents': args.num_agents,
+        'num_obstacles': args.num_obstacles,
+        'x_bound': args.max_x_value,
+        'y_bound': args.max_y_value,
+        'max_step': args.max_step,
+        'episode_len': args.episode_len,
+        'min_speed': args.min_speed,
+        'max_speed': args.max_speed,
+        'min_accel': args.min_accel,
+        'max_accel': args.max_accel,
+        'risk_factor': args.risk_factor,
+        'distance_factor': args.distance_factor,
+        'heading_factor': args.heading_factor,
+        'target_factor': args.target_factor,
+        'soft_factor': args.soft_factor,
+        'bond_factor': args.bond_factor,
+        'sampler': set_sampler_params(args, device),
+        'init': set_init_params(args, device),
+        }
+
+    return env_params
+
+def set_params(args):
+
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+
+    if args.rendering:
+        params = {
+        'env': set_env_params(args, device),
+        'model': set_model_params(args, device),
+        'animation': set_animation_params(args, device)
+        }
+    elif args.reward_check:
+        params = {
+        'env': set_env_params(args, device),
+        'animation': set_animation_params(args, device)
+        }
+    else: # TRAINING, ADD ARG FOR THIS & EVAL ?, THEN USE else FOR VALUE ERROR
+        params = {
+        'env': set_env_params(args, device),
+        'model': set_model_params(args, device)
+        }
+
+    return params
+
+################################################################################
+
 
 class MockInitializer(object):
     """Mock intializer for testing."""
@@ -194,7 +478,9 @@ class ConstantSampler(object):
 
 def action_sampler(params):
     """Samples a random action tensor."""
-    if params['sample_method'] == 'mock_sampler':
+    if params is None: # No sampler needed when policy is used
+        return None
+    elif params['sample_method'] == 'mock_sampler':
         return MockSampler(params)
     elif params['sample_method'] =='const_sampler':
         return ConstantSampler(params)
