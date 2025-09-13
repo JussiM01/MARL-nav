@@ -65,6 +65,7 @@ class Env(object):
         self._cap_distance = 0.1
         self._bond_sharpness = 1. # Smaller values create more sharply peaked reward
         self._ideal_dist = 40.
+        self._init_dist = 1200. # initial distance from agents center positions to target center
 
     def reset(self):
         """Resets the agents' and env states, returns observations and info."""
@@ -255,12 +256,10 @@ class Env(object):
 
         return torch.where(abs_diffs < max_angle_diff, 1., 0.)
 
-    def _soft_reward(self, distances_to_target):
-        """Returns soft reward for closeness to the target area."""
-        scaled_distances = distances_to_target/self._target_radius
-        scaled_reward = torch.squeeze(2./(1. + scaled_distances**2), dim=2)
+    def _soft_reward(self, distances_to_target): # NOTE: NAME CHANGE ? (for example _linear_rew ?)
+        """Returns soft reward for closeness to the target area.""" # AND CHANGE DESCRIPTION ALSO ?
 
-        return torch.clamp(scaled_reward, max=1.)
+        return -1.*torch.squeeze(distances_to_target/self._init_dist, dim=2)
 
     def _bond_reward(self, distances_to_others):
         """Returns soft reward for closeness to the ideal bond distance."""
