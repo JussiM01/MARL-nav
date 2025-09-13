@@ -19,6 +19,7 @@ triangle_params = { # NOTE: SHOULD BE LOADED FROM CONFIG-FILE
     'ags_cent_x': 150.,
     'ags_cent_y': 375.,
     'ags_dist': 40.,
+    'init_speed': 3.,
     'tar_pos_x': 1350.,
     'tar_pos_y': 375.,
     'noisy_ags': False,
@@ -321,6 +322,7 @@ class TriangleIntitializer(object):
         self.ags_cent_x = params['ags_cent_x']
         self.ags_cent_y = params['ags_cent_y']
         self.ags_dist = params['ags_dist']
+        self.init_speed = params['init_speed']
         self.tar_pos_x = params['tar_pos_x']
         self.tar_pos_y = params['tar_pos_y']
         self.num_obs = params['num_obs']
@@ -355,8 +357,8 @@ class TriangleIntitializer(object):
             [self.tar_pos_x, self.tar_pos_y]).to(self.device), dim=0)
         self.target = torch.unsqueeze(
             target, dim=0).repeat(self.num_parallel, 1, 1)
-        self.speeds = torch.zeros([self.num_parallel, 3, 1]).to(
-            self.device)
+        self.speeds = self.init_speed * torch.ones(
+            [self.num_parallel, 3, 1]).to(self.device)
 
         sigma = torch.diag(torch.tensor([self.ags_std, self.ags_std])).to(
             self.device)
