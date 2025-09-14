@@ -65,6 +65,29 @@ to the above command. However, notice that sampling the actions from the policy
 (instead of using its predicted mean) will make the agents' movements very wiggly
 and will not produce optimal behavior.
 
+At the moment there exists also so called reward check functionality for helping
+to experiment with different reward combinations and checking out if the environment
+behaves as it should. I might remove it when the experimentations are ready. It is
+used for running the environment with predetermined actions trajectories, and saving
+all the rewards and observations from these runs to plots. For example, the command
+```
+python -m marlnav -rc -sn -1 -se 0
+```
+runs the environment with the sampler option ```-sn -1```, where the agents move on a constant
+speed horizontal trajectories. I used this for testing the effects of collisions and target
+reaches. The other options (values 0 and 1) have even more rigid settings (the objects' positions
+are also predetermined) and the random seed dose not affect them. It is also possible to visualize
+all of these by rendering, for example
+```
+python -m marlnav -re -sn -1 -se 0
+```
+renders the environment's visualization of the previous command. Or to be more precise, there
+are actually two parallel environments, and this shows the movements from the index 0 (which
+is the default value). For visualization of the parallel index value 1, use the following command
+```
+python -m marlnav -re -sn -1 -se 0 -pi 1
+```
+
 ## About the implementation
 The MAPPO algorithm is described in the original [article](https://arxiv.org/pdf/2103.01955).
 As a main code reference for the PPO implementation I used a single agent PPO tutorial which
