@@ -39,7 +39,7 @@ class Env(object):
         self._terminates = torch.tensor(self.num_parallel*[False]).to(self.device)
         self._reinit_mask = torch.zeros([self.num_parallel]).to(self.device)
 
-        # Couter for episode stats
+        # Counters for episodes' stats
         self._num_trunc = 0
         self._num_col = 0
         self._num_tar = 0
