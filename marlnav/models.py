@@ -93,6 +93,11 @@ class MAPPO(object):
         self._max_rew = float("-inf")
         self._mean_rew = 0.
         self._logs = {
+            'epi_stats': {
+                'trunc': [],
+                'col': [],
+                'tar':[],
+            },
             'mean_rews': [],
             'actor': [],
             'critic': [],
@@ -117,6 +122,7 @@ class MAPPO(object):
             self.obs = self._normalize(new_obs) # only normalized observations (-1. to 1.) are used everywhere
 
         self._process_rewards()
+        self._update_epi_stats()
 
         if self._mean_rew > self._max_rew:
             torch.save(self.actor.state_dict(), self._actor_path)
@@ -140,6 +146,16 @@ class MAPPO(object):
         self._mean_rew = mean_rew
         print('MEAN_REW', mean_rew.item())
         self._logs['mean_rews'] += [mean_rew.item()]
+
+
+    def _update_epi_stats(self):
+
+        self._logs['epi_stats']['trunc'] += [self.env._num_trunc]
+        self._logs['epi_stats']['col'] += [self.env._num_col]
+        self._logs['epi_stats']['tar'] += [self.env._num_tar]
+        self.env._num_trunc = 0
+        self.env._num_col = 0
+        self.env._num_tar = 0
 
     def train_actor(self):
 
@@ -186,6 +202,7 @@ class MAPPO(object):
         rew_file = os.path.join(self._ppath, self._time + '_mean_rews.png')
         act_file = os.path.join(self._ppath, self._time + '_act_loss.png')
         cri_file = os.path.join(self._ppath, self._time + '_cri_loss.png')
+        epi_file = os.path.join(self._ppath, self._time + '_epi_stats.png')
 
         self._create_plot(
             self._logs['mean_rews'], 'rollot_num', 'Mean Rewards', rew_file)
@@ -202,6 +219,7 @@ class MAPPO(object):
         rew_logfile = os.path.join(self._lpath, self._time + '_mean_rews.csv')
         act_logfile = os.path.join(self._lpath, self._time + '_act_loss.csv')
         cri_logfile = os.path.join(self._lpath, self._time + '_cri_loss.csv')
+        epi_logfile = os.path.join(self._lpath, self._time + '_epi_stats.csv')
 
         self._create_logfile(
             [[num] for num in self._logs['mean_rews']], rew_logfile)
@@ -210,6 +228,8 @@ class MAPPO(object):
         self._create_logfile(
             [[num] for num in self._logs['critic']], cri_logfile)
 
+        self._save_epi_stats(epi_file, epi_logfile)
+
     def _create_plot(self, stats, xlabel, title, filename):
 
         fig, ax = plt.subplots(1, 1)
@@ -217,6 +237,28 @@ class MAPPO(object):
         ax.plot(stats)
         fig.suptitle(title)
         fig.savefig(filename)
+
+    def _save_epi_stats(self, plotfile, logfile):
+
+        fig, ax = plt.subplots(1, 1)
+        ax.set(xlabel='rollout', ylabel='value')
+        ax.plot(self._logs['epi_stats']['trunc'], color='blue',
+            label='truncated')
+        ax.plot(self._logs['epi_stats']['col'], color='red',
+            label='collisions')
+        ax.plot(self._logs['epi_stats']['tar'], color='green',
+            label='target reached')
+        ax.legend()
+        fig.suptitle('Episode endings')
+        fig.savefig(plotfile)
+
+        num_rows = len(self._logs['epi_stats']['trunc']) # NOTE: MAYBE ADD self.num_repeats PARAM ?
+        with open(logfile, 'w', newline='') as f:
+            writer = csv.writer(f)
+            writer.writerow(['Truncated', 'Collisions', 'Target reached'])
+            writer.writerows([[self._logs['epi_stats']['trunc'][i],
+                self._logs['epi_stats']['col'][i],
+                self._logs['epi_stats']['tar'][i]] for i in range(num_rows)])
 
     def _create_logfile(self, value_list, filename):
 

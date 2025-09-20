@@ -1,10 +1,12 @@
 import matplotlib.pyplot as plt
 import numpy as np
+import os
 import torch
 
 from marlnav.utils import ActionScaler, ObsNormalizer
 from matplotlib.animation import FuncAnimation
 from marlnav.utils import init_animation
+from marlnav.models import Actor
 
 
 class Animation:
@@ -73,3 +75,22 @@ class Animation:
         _ = FuncAnimation(self.fig, self.update, frames=self.max_step,
             repeat=False, interval=self.interval, blit=True)
         plt.show()
+
+
+def init_render(env, params):
+
+    style = params['animation']['sampling_style']
+    if style == 'policy': # NOTE: REFACTOR THIS ELSEWHERE (or parts of it) ?
+        actor = Actor(**params['model']['actor']).to(params['env']['device'])
+        filename = os.path.join(
+            os.getcwd(), 'weights', params['animation']['weights_file']) # ADD EXCEPTION HANDLING ? (missing file)
+        actor.load_state_dict(
+            torch.load(filename, weights_only=True))
+        actor.eval()
+        renderer = Animation(env, params['animation'], actor=actor)
+    elif style == 'sampler':
+        renderer = Animation(env, params['animation'])
+    else:
+        raise NotImplementedError
+
+    return renderer
