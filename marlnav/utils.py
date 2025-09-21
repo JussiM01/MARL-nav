@@ -154,6 +154,13 @@ def set_scaler_params(args, device):
 
 def set_model_params(args, device):
 
+    if args.batch_size > args.buffer_len:
+        raise ValueError("batch_size can't be greater than buffer_len.")
+
+    elif args.num_total % (args.buffer_len * args.num_parallel) != 0:
+        raise ValueError(
+            'num_total should be divisible with (buffer_len * num_parallel).')
+
     obs_size = 12 # NOTE: THIS MAY CHANGE IN THE FUTURE !
               #(for example if velocity differences are added to observations)
     model_params = {

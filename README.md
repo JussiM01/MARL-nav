@@ -2,8 +2,8 @@
 This project contains a GPU-parallelized multi-agent environment and a MAPPO algorithm
 for solving it. Both of these are implemented with PyTorch. The environment has a target
 area which the agents attempt to reach in a loose formation, while avoiding obstacles on
-their way. The GPU-parallelization makes it possible to run up to thousands of instances
-of the environment in parallel during the rollouts, which significantly speeds up the training.
+their way. The GPU-parallelization makes it possible to run over thousand instances of
+the environment in parallel during the rollouts, which significantly speeds up the training.
 
 The first image below shows the initial state of a single environment. The second image
 depicts its ideal end state where the agents have reached the target area together.
