@@ -29,7 +29,8 @@ triangle_params = { # NOTE: SHOULD BE LOADED FROM CONFIG-FILE
     'obst_min_x': 500.,
     'obst_max_x': 1000.,
     'obst_min_y': 250.,
-    'obst_max_y': 500.
+    'obst_max_y': 500.,
+    'corridor': False,
     }
 
 mock_params0 = { # NOTE: SHOULD BE LOADED FROM CONFIG-FILE
@@ -218,6 +219,11 @@ def set_init_params(args, device):
 
     if args.sampler_num == -1:
         init_params = triangle_params  # NOTE: SHOULD BE LOADED FROM CONFIG-FILE
+        if args.corridor:  # NOTE: This should come from args OR preferably all params from JSON-file
+            triangle_params['obst_min_y'] = 100. # Smaller value for the corridor to the target.
+            triangle_params['obst_max_y'] = 650. # Larger value for the corridor to the target.
+            triangle_params['portion'] = 0.33 # (corridor height) / (original y-range)
+            triangle_params['corridor'] = True
         init_params['num_parallel'] = args.num_parallel
         init_params['num_obs'] = args.num_obstacles
 
@@ -408,12 +414,36 @@ class TriangleIntitializer(object):
         return torch.matmul(rotation_matrix, direction_vector)
 
 
+class SideObstaclesInit(TriangleIntitializer):
+    """Intial state sampler for three agents and the environment."""
+
+    def __init__(self, params):
+        super().__init__(params)
+        self._portion = params['portion']
+        self._y_dilation = self._obs_y_range * (1 - self._portion) * 0.5
+
+    def _sample_obstacles(self):
+        scaled_pos_x = self._obs_x_range * (
+            torch.rand(self.num_parallel, self.num_obs, 1) - 0.5)
+        scaled_pos_y = self._portion * self._obs_y_range * ( # Scale by portion
+            torch.rand(self.num_parallel, self.num_obs, 1) - 0.5)
+        obs_pos_x = scaled_pos_x + self._obs_mean_x
+        shifts = (self._y_dilation * 2. # Sample dilation (up/down from the mid-line)
+            * (torch.randint(0, 2, (self.num_parallel, self.num_obs, 1)) - 0.5))
+        scaled_pos_y += shifts # Add dilations
+        obs_pos_y = scaled_pos_y + self._obs_mean_y
+
+        return torch.cat([obs_pos_x, obs_pos_y], dim=2).to(self.device)
+
 def init_sampler(params):
     """Initializes random states of the environment."""
     if params['init_method'] == 'mock_init':
         return MockInitializer(params)
     elif params['init_method'] == 'triangle':
-        return TriangleIntitializer(params)
+        if params['corridor']:
+            return SideObstaclesInit(params)
+        else:
+            return TriangleIntitializer(params)
 
 
 class MockSampler(object):  # NOTE: THIS ONE IS FOR ACCELERATION TESTING

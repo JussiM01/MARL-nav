@@ -100,6 +100,8 @@ if __name__ == '__main__':
         help='Weight factor for the smooth target distance reward.')
     parser.add_argument('-bf', '--bond_factor', type=float, default=10., # NOTE: CHANGE THIS LATER?
         help='Weight factor for the bond distance reward.')
+    parser.add_argument('-co', '--corridor', action='store_true',
+        help='Sample obstacles only around a corridor, action: store_true')
 
     # model specific args
     parser.add_argument('-hs', '--hidden_size', type=int, default=50, # NOTE: CHANGE THIS LATER?
