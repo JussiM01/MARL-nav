@@ -112,8 +112,12 @@ if __name__ == '__main__':
         help='Weight constant for the entropy loss.')
     parser.add_argument('-ep', '--epsilon', type=float, default=0.01, # NOTE: CHANGE THIS LATER?
         help='Epsilon parameter for the loss clipping.')
-    parser.add_argument('-g', '--gamma', type=float, default=0.9, # NOTE: CHANGE THIS LATER?
-        help='Gamma parameter for the cummulative rewards.')
+    parser.add_argument('-g', '--gamma', type=float, default=0.99, # NOTE: CHANGE THIS LATER?
+        help='Gamma parameter for the discount strength')
+    parser.add_argument('-la', '--lambda_', type=float, default=0.95, # NOTE: CHANGE THIS LATER?
+        help='Lambda parameter for the Generalised Advatage Estimates.')
+    parser.add_argument('-bo', '--bootstrap', type=int, default=1,
+        help='Option for bootstrapping critic in time cut-offs (no=0, yes=1).')
     parser.add_argument('-nt', '--num_total', type=int, default=1000000, # NOTE: CHANGE THIS LATER?
         help='Number of total steps to be executed (parallel included).')
     parser.add_argument('-bl', '--buffer_len', type=int, default=1000, # NOTE: CHANGE THIS LATER?

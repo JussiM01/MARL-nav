@@ -179,6 +179,8 @@ def set_model_params(args, device):
         'ent_const': args.ent_const,
         'epsilon': args.epsilon,
         'gamma': args.gamma,
+        'lambda': args.lambda_,
+        'bootstrap': bool(args.bootstrap),
         'num_total': args.num_total,
         'num_parallel': args.num_parallel,
         'buffer_len': args.buffer_len,

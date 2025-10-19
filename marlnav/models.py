@@ -1,6 +1,7 @@
 import csv
 import json
 import os
+import time
 import torch
 import matplotlib.pyplot as plt
 
@@ -75,9 +76,11 @@ class MAPPO(object):
         self.ent_const = params['ent_const']
         self.epsilon = params['epsilon']
         self.gamma = params['gamma']
+        self.lambda_ = params['lambda']
         self.buffer_len = params['buffer_len']
         self.num_epochs = params['num_epochs']
         self.batch_size = params['batch_size']
+        self.bootstrap = params['bootstrap']
         self.buffer = []
         self._normalize = ObsNormalizer(params['normalizer'])
         self._scale_up = ActionScaler(params['scaler'])
@@ -108,6 +111,7 @@ class MAPPO(object):
 
         self.buffer = []
         self.obs = self._normalize(self.env.observations()) # set the inital observations
+        t0 = time.time()
         for j in range(self.buffer_len):
             print('step', j+1) # NOTE: FOR DEBUGGING. CHOOSE A BETTER PROGESS LOGGING FOR ACTUAL USE
             dist = self.actor(self.obs)
@@ -116,37 +120,74 @@ class MAPPO(object):
             actions = actions.view(-1, self.num_agents, self.action_size) # sampled actions are used in training
             scaled_actions = self._scale_up(actions) # up scaled actions (with true scale) are used by the env
             new_obs, rewards, terminated, truncated = self.env.step(scaled_actions) # MAYBE CLIPPING IS NEEDED ?
-            done = torch.logical_or(terminated, truncated) # (since actions are sampled from gaussian dist)
-            values = self.critic(self.obs)
-            self.buffer += [[self.obs, actions, log_probs, values, rewards, done]]
+            values = self.critic(self.obs)         # (since actions are sampled from gaussian dist)
+            advantages = torch.zeros_like(values) # SHOULD BE EVENTUALLY buffer_len * num_gents ?
+            self.buffer += [[self.obs, actions, log_probs, values, rewards,
+                advantages, terminated, truncated]]
+            # VALUES SHAPE: (num_parallel, 1)
+            # REWARDS SHAPE: (num_parallel)
             self.obs = self._normalize(new_obs) # only normalized observations (-1. to 1.) are used everywhere
 
-        self._process_rewards()
+        t1 = time.time()
+        self._process_buffer()
+        t2 = time.time()
         self._update_epi_stats()
+        print('rollout took {0} seconds'.format(t1-t0))
+        print('buffer processing took {0} seconds'.format(t2-t1))
 
         if self._mean_rew > self._max_rew:
             torch.save(self.actor.state_dict(), self._actor_path)
             torch.save(self.critic.state_dict(), self._critic_path)
 
-    def _process_rewards(self):
+    def _process_buffer(self):
+        self._calculate_GAEs()
+        self._discount_rews()
 
+    def _calculate_GAEs(self):
+        """Calculates the Generalized Advantage Estimates."""
+        # indeces: obs: 0, actions: 1, log_probs: 2, values: 3, rewards: 4
+        # advantages: 5, terminated: 6, truncated: 7
+        last_adv = torch.zeros([self.num_parallel, 1], dtype=float).to(self.device)
+        last_val = self.buffer[-1][3]
+        # What about last reward? Should it be zeros if terminated? or values if truncated?
+
+        for i in reversed(range(self.buffer_len)):
+            done = torch.unsqueeze(
+                torch.logical_or(self.buffer[i][6], self.buffer[i][7]), dim=1)
+            last_val = torch.where(done, 0, last_val)
+            last_adv = torch.where(done, 0, last_adv) # NOTE: SHAPE Should be: (num_parallel, 1)
+            rew = torch.unsqueeze(self.buffer[i][4], dim=1)
+            delta = rew + self.gamma * last_val - self.buffer[i][3] # IS THIS CORRECT?
+            last_adv = delta + self.gamma * self.lambda_ * last_adv # Should the last rew be zeros?
+            self.buffer[i][5] = last_adv                 # and/or bootstrapped for truncated rews?
+            last_val = self.buffer[i][3] # NOTE: SHAPE SHOULD BE: (num_parallel, 1)
+
+    def _discount_rews(self):
+        """Transforms the rewards to discounted form and normalizes them."""
         curr_rew = torch.zeros([self.num_parallel], dtype=float).to(self.device)
-        # Changing the rewards to cummulative rewards in a backward loop:
-        for i in range(self.buffer_len - 1, -1, -1):
-            rew, done = self.buffer[i][-2], self.buffer[i][-1]
+        # Changing the rewards to discounted rewards in a backward loop:
+        for i in reversed(range(self.buffer_len)):
+            terminated = self.buffer[i][6]
+            truncated = self.buffer[i][7]
+            done = torch.logical_or(terminated, truncated)
+            rew = self.buffer[i][4]
             curr_rew = torch.where(done, 0., rew + self.gamma * curr_rew)
-            self.buffer[i][-2] = curr_rew
+
+            if self.bootstrap: # Bootstrapping critic values to episode time cut-off rewards
+                time_cutoff_val = torch.squeeze(self.buffer[i][3])
+                curr_rew = torch.where(truncated, time_cutoff_val, curr_rew)
+
+            self.buffer[i][4] = curr_rew
 
         std, mean_rew = torch.std_mean(
-            torch.cat([self.buffer[i][-2] for i in range(self.buffer_len)]))
+            torch.cat([self.buffer[i][4] for i in range(self.buffer_len)]))
 
         for i in range(self.buffer_len): # Normalizing the rewards
-            self.buffer[i][-2] = (self.buffer[i][-2] - mean_rew) / (std + 1e-12)
+            self.buffer[i][4] = (self.buffer[i][4] - mean_rew) / (std + 1e-12)
 
         self._mean_rew = mean_rew
         print('MEAN_REW', mean_rew.item())
         self._logs['mean_rews'] += [mean_rew.item()]
-
 
     def _update_epi_stats(self):
 
@@ -268,23 +309,21 @@ class MAPPO(object):
             writer.writerows(value_list)
 
     def _actor_loss(self, mini_batch):
-
+        # indeces: obs: 0, actions: 1, log_probs: 2, values: 3, rewards: 4
+        # advantages: 5
         size = len(mini_batch)
         obs = torch.cat([mini_batch[i][0] for i in range(size)], dim=0)
         actions = torch.cat([mini_batch[i][1] for i in range(size)], dim=0)
         log_probs = torch.cat([mini_batch[i][2] for i in range(size)], dim=0)
-        values = torch.cat([mini_batch[i][3] for i in range(size)], dim=0)
         rewards = torch.cat([mini_batch[i][4] for i in range(size)], dim=0)
+        advantages = torch.cat([mini_batch[i][5] for i in range(size)], dim=0)
 
         dist = self.actor(obs)
         actions = actions.view(
             self.num_parallel * self.num_agents * size, self.action_size)
         new_log_probs = dist.log_prob(actions)
         entropies = dist.entropy()
-
-        rewards = rewards.repeat(self.num_agents)
-        values = torch.squeeze(values).repeat(self.num_agents)
-        advantages = rewards - torch.squeeze(values)
+        advantages = advantages.repeat(1, self.num_agents).view(-1)
 
         margin = self.epsilon # NOTE: IS ANNEALING NEEDED & SHOULD THIS BE A DIFFERENT EPSILON ?
         # margin = self.epsilon * annealing # NOTE: WHERE THESE COME ?! (should this be differnt epsilon?)
