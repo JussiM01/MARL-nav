@@ -200,7 +200,7 @@ class MAPPO(object):
 
     def train_actor(self):
 
-        print('Training the actor ({0} epochs).\n'.format(self.num_epochs))
+        print('\nTraining the actor ({0} epochs).\n'.format(self.num_epochs))
         for i in range(self.num_epochs):
             print('Epoch {0}.\n'.format(i+1))
             for j in range(self.buffer_len // self.batch_size):
@@ -215,12 +215,12 @@ class MAPPO(object):
                 loss = self._actor_loss(mini_batch)
                 loss.backward()
                 self.actor_optimizer.step()
-                print('ACTOR LOSS', loss.item()) # NOTE: FOR DEBUGGING. CHOOSE A BETTER PROGESS LOGGING FOR ACTUAL USE
+                print('ACTOR LOSS: {0}\n'.format(loss.item())) # NOTE: FOR DEBUGGING. CHOOSE A BETTER PROGESS LOGGING FOR ACTUAL USE
                 self._logs['actor'] += [loss.item()]
 
     def train_critic(self):
 
-        print('Training the critic ({0} epochs).\n'.format(self.num_epochs))
+        print('\nTraining the critic ({0} epochs).\n'.format(self.num_epochs))
         for i in range(self.num_epochs):
             print('Epoch {0}.\n'.format(i+1))
             for j in range(self.buffer_len // self.batch_size):
@@ -235,7 +235,7 @@ class MAPPO(object):
                 loss = self._critic_loss(mini_batch)
                 loss.backward()
                 self.critic_optimizer.step()
-                print('CRITIC LOSS', loss.item()) # NOTE: FOR DEBUGGING. CHOOSE A BETTER PROGESS LOGGING FOR ACTUAL USE
+                print('CRITIC LOSS: {0}\n'.format(loss.item())) # NOTE: FOR DEBUGGING. CHOOSE A BETTER PROGESS LOGGING FOR ACTUAL USE
                 self._logs['critic'] += [loss.item()]
 
     def save_stats(self, full_params):
