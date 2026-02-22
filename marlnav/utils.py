@@ -14,8 +14,8 @@ Observations = namedtuple('Observations', ['target_angle', 'target_distance',
     'obstacles_angles', 'obstacles_distances', 'others_angles',
     'others_distances'])
 
-triangle_params = { # NOTE: SHOULD BE LOADED FROM CONFIG-FILE
-    'init_method': 'triangle',
+row_params = { # NOTE: SHOULD BE LOADED FROM CONFIG-FILE
+    'init_method': 'row',
     'ags_cent_x': 150.,
     'ags_cent_y': 375.,
     'ags_dist': 40.,
@@ -220,12 +220,12 @@ def set_animation_params(args, device):
 def set_init_params(args, device):
 
     if args.sampler_num == -1:
-        init_params = triangle_params  # NOTE: SHOULD BE LOADED FROM CONFIG-FILE
+        init_params = row_params  # NOTE: SHOULD BE LOADED FROM CONFIG-FILE
         if args.corridor:  # NOTE: This should come from args OR preferably all params from JSON-file
-            triangle_params['obst_min_y'] = 100. # Smaller value for the corridor to the target.
-            triangle_params['obst_max_y'] = 650. # Larger value for the corridor to the target.
-            triangle_params['portion'] = 0.33 # (corridor height) / (original y-range)
-            triangle_params['corridor'] = True
+            row_params['obst_min_y'] = 100. # Smaller value for the corridor to the target.
+            row_params['obst_max_y'] = 650. # Larger value for the corridor to the target.
+            row_params['portion'] = 0.33 # (corridor height) / (original y-range)
+            row_params['corridor'] = True
         init_params['num_parallel'] = args.num_parallel
         init_params['num_obs'] = args.num_obstacles
 
@@ -324,7 +324,7 @@ class MockInitializer(object):
         return self.states, self.obstacles, self.target
 
 
-class TriangleIntitializer(object):
+class RowIntitializer(object):
     """Intial state sampler for three agents and the environment."""
 
     def __init__(self, params):
@@ -351,10 +351,11 @@ class TriangleIntitializer(object):
         self._obs_mean_x = 0.5 * (self.obs_min_x + self.obs_max_x)
         self._obs_mean_y = 0.5 * (self.obs_min_y + self.obs_max_y)
 
-        pos_const = 0.5 * self.ags_dist
+        pos_const = self.ags_dist
         ags_pos = pos_const * torch.tensor(
-            [[-1/math.sqrt(3), 1.], [2/math.sqrt(3), 0.],[-1/math.sqrt(3), -1.]]
+            [[0., 1.], [0., 0.],[0., -1.]]
             ).to(self.device)
+
         mean_pos = torch.unsqueeze(
             torch.tensor([self.ags_cent_x, self.ags_cent_y]).to(self.device),
             dim=0).repeat(3,1)
@@ -413,7 +414,7 @@ class TriangleIntitializer(object):
         return torch.matmul(rotation_matrix, direction_vector)
 
 
-class SideObstaclesInit(TriangleIntitializer):
+class SideObstaclesInit(RowIntitializer):
     """Intial state sampler for three agents and the environment."""
 
     def __init__(self, params):
@@ -438,11 +439,11 @@ def init_sampler(params):
     """Initializes random states of the environment."""
     if params['init_method'] == 'mock_init':
         return MockInitializer(params)
-    elif params['init_method'] == 'triangle':
+    elif params['init_method'] == 'row':
         if params['corridor']:
             return SideObstaclesInit(params)
         else:
-            return TriangleIntitializer(params)
+            return RowIntitializer(params)
 
 
 class MockSampler(object):  # NOTE: THIS ONE IS FOR ACCELERATION TESTING
