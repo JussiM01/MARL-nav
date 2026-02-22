@@ -46,11 +46,8 @@ class Env(object):
 
         # Reward weight factors
         self._risk_factor = params['risk_factor']
-        self._distance_factor = params['distance_factor']
         self._heading_factor = params['heading_factor']
         self._target_factor = params['target_factor']
-        self._soft_factor = params['soft_factor']
-        self._bond_factor = params['bond_factor']
 
         # Geometric attributes
         self._ob_risk_dist = 60.
@@ -193,13 +190,8 @@ class Env(object):
             observations.others_distances, self._ag_coll_dist)
         in_target_area = torch.where(
             observations.target_distance < self._target_radius, 1., 0.)
-        distance_scores = self._distance_reward(
-            observations.others_distances, self._agents_min_d,
-            self._agents_max_d, self._max_at_prop_d) # NOTE: DOES THE METHOD REALLY NEED THE LAST PARAMETER ?
         heading_scores = self._heading_reward(
             observations.target_angle, self._max_angle_diff)
-        soft_score = self._soft_reward(observations.target_distance)
-        bond_score = self._bond_reward(observations.others_distances)
 
         risks = torch.clamp(obstacle_risks + agent_risks, max=1)
         collisions = torch.clamp(obstacle_collisions + agent_collisions, max=1)
@@ -221,14 +213,11 @@ class Env(object):
         # so that the reinit is done only ones after the target is reached.
 
         risk_loss = self._risk_factor * risks
-        distance_rew = self._distance_factor * distance_scores
         heading_rew = self._heading_factor * heading_scores
         target_rew = self._target_factor * all_in_target.expand(
             size=(self.num_parallel, self.num_agents))
-        soft_rew = self._soft_factor * soft_score
-        bond_rew = self._bond_factor * bond_score
-        reward = (target_rew + heading_rew + distance_rew + soft_rew
-            + bond_rew -risk_loss)
+
+        reward = target_rew + heading_rew -risk_loss
 
         return torch.mean(reward, dim=1), terminated
         # return reward, terminated # NOTE: USE THIS FOR DEBUGGING/TESTING NEW REWARDS
@@ -240,33 +229,11 @@ class Env(object):
 
         return detections
 
-    def _distance_reward(self, distances, min_dist, max_dist, max_value):
-        """Returns normalized rewards for staying within a proper distance."""
-        above_min = torch.where(min_dist < distances, 1., 0.)
-        below_max = torch.where(distances < max_dist, 1., 0.)
-        detections = above_min * below_max
-        capped_sums = torch.clamp(torch.sum(detections, dim=2), max=max_value) # MAX DETECTIONS TO CARE ABOUT
-                                                                                # MAYBE NO NEED?
-        return torch.div(capped_sums, max_value) # SCALED BY THE MAX VALUE, THIS IS NEEDED (might dominate other
-                                                                            # rewards for large number of agents)
-
     def _heading_reward(self, heading_diffs, max_angle_diff): # INPUT SHAPE: (num_parallel, num_agents, 1)
         """Returns rewards for keeping the heading near target direction."""
         abs_diffs = torch.squeeze(torch.abs(heading_diffs), dim=2)
 
         return torch.where(abs_diffs < max_angle_diff, 1., 0.)
-
-    def _soft_reward(self, distances_to_target): # NOTE: NAME CHANGE ? (for example _linear_rew ?)
-        """Returns soft reward for closeness to the target area.""" # AND CHANGE DESCRIPTION ALSO ?
-
-        return -1.*torch.squeeze(distances_to_target/self._init_dist, dim=2)
-
-    def _bond_reward(self, distances_to_others):
-        """Returns soft reward for closeness to the ideal bond distance."""
-        diffs = distances_to_others - self._ideal_dist
-        scaled_diffs = diffs/self._bond_sharpness
-
-        return torch.mean(1./(1. + scaled_diffs**2), dim=2)
 
     def _get_distances(self, own_pos_array, others_pos_array): # NOTE: FOR SINGLE AGENT PARALLEL ARRAY
         """Returns tensor of distances between own and others positions."""

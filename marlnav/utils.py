@@ -278,11 +278,8 @@ def set_env_params(args, device):
         'min_accel': args.min_accel,
         'max_accel': args.max_accel,
         'risk_factor': args.risk_factor,
-        'distance_factor': args.distance_factor,
         'heading_factor': args.heading_factor,
         'target_factor': args.target_factor,
-        'soft_factor': args.soft_factor,
-        'bond_factor': args.bond_factor,
         'sampler': set_sampler_params(args, device),
         'init': set_init_params(args, device),
         }
@@ -679,19 +676,15 @@ def check_rews(env, num_steps, parallel_ind, agent_ind):
 
     tar_fac = env._target_factor
     hea_fac = env._heading_factor
-    dis_fac = env._distance_factor
     ris_fac = env._risk_factor
-    sof_fac = env._soft_factor
-    bon_fac = env._bond_factor
 
     fig, ax = plt.subplots(1, 1)
     ax.set(xlabel='step number', ylabel='value')
     ax.plot(rewards)
     fig.suptitle('Rewards, parallel index: {0}, agent index: {1}'.format(
         parallel_ind, agent_ind)
-        + '\n Factors: tar {0}, hea {1}'.format(tar_fac, hea_fac)
-        + ', dis {0}, ris {1}, sof {2} bof {3}'.format(
-            dis_fac, ris_fac, sof_fac, bon_fac))
+        + '\n Factors: tar {0}, hea {1}, ris {2}'.format(
+            tar_fac, hea_fac, ris_fac))
     save_plot(fig, 'rewards_B{0}A{1}T{2}H{3}D{4}R{5}S{6}.png'.format(
         parallel_ind, agent_ind, tar_fac, hea_fac, dis_fac, ris_fac, sof_fac,
         bon_fac),
