@@ -20,7 +20,7 @@ row_params = { # NOTE: SHOULD BE LOADED FROM CONFIG-FILE
     'ags_cent_y': 375.,
     'ags_dist': 40.,
     'init_speed': 3.,
-    'tar_pos_x': 1350.,
+    'tar_pos_x': 1300.,
     'tar_pos_y': 375.,
     'noisy_ags': False,
     # 'noisy_ags': True, # TEST FIRST WITH THE STATIC AGENT STATES CASE
@@ -541,7 +541,7 @@ def init_animation(params, agents_pos, obstacles_pos, target_pos):
     obs_scatter2 = ax.scatter(obstacles_pos[:, 0], obstacles_pos[:, 1],
         s=1500, lw=0.5, c=np.array([(1., 0., 0., 1.)]))
     target_scatter = ax.scatter(target_pos[:, 0], target_pos[:, 1],
-        s=2000, facecolors='w', lw=1.5, edgecolors='k', linestyle=':')
+        s=9000, facecolors='w', lw=1.5, edgecolors='k', linestyle=':')
 
     return fig, agents_scatter, obs_scatter1, obs_scatter2, target_scatter
 
@@ -686,7 +686,5 @@ def check_rews(env, num_steps, parallel_ind, agent_ind):
         parallel_ind, agent_ind)
         + '\n Factors: tar {0}, hea {1}, ris {2}'.format(
             tar_fac, hea_fac, ris_fac))
-    save_plot(fig, 'rewards_B{0}A{1}T{2}H{3}D{4}R{5}S{6}.png'.format(
-        parallel_ind, agent_ind, tar_fac, hea_fac, dis_fac, ris_fac, sof_fac,
-        bon_fac),
-        'plots')
+    save_plot(fig, 'rewards_B{0}A{1}T{2}H{3}R{4}.png'.format(
+        parallel_ind, agent_ind, tar_fac, hea_fac, ris_fac), 'plots')
