@@ -79,7 +79,7 @@ if __name__ == '__main__':
     parser.add_argument('-ms', '--max_step', type=int, default=1000, # NOTE: DEFAULT=100 FOR TESTING, change this later?
         help='maximum number of time steps in the simulation')
     parser.add_argument('-el', '--episode_len', type=int, default=200, # NOTE: DEFAULT=100 FOR TESTING, change this later?
-        help='maximum number od steps in an episode')
+        help='maximum number of steps in an episode')
     parser.add_argument('-mis', '--min_speed', type=float, default=3.,
         help='Minimum cut-off value for the speed.')
     parser.add_argument('-mas', '--max_speed', type=float, default=10., # NOTE: CHANGE THIS LATER?
