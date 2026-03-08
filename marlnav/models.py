@@ -20,6 +20,7 @@ class Actor(nn.Module):
         self.flatten = nn.Flatten(start_dim=0, end_dim=1)
         self.fc1   = nn.Linear(input_size, hidden_size)
         torch.nn.init.orthogonal_(self.fc1.weight)
+        self.relu = nn.ReLU()
         self.fc_mu = nn.Linear(hidden_size, 2)
         torch.nn.init.orthogonal_(self.fc_mu.weight)
         self.fc_std = nn.Linear(hidden_size, 2)
@@ -27,7 +28,7 @@ class Actor(nn.Module):
 
     def forward(self, x):
         x = self.flatten(x)
-        x = self.fc1(x)
+        x = self.relu(self.fc1(x))
         mu = torch.tanh(self.fc_mu(x))
         std = nn.functional.softplus(self.fc_std(x))
         sigma = torch.vmap(torch.diag)(std) # NOTE: vmap is needed since std is a batch of vectors
