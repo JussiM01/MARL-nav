@@ -47,7 +47,7 @@ if __name__ == '__main__':
 
     # common args
     parser.add_argument('-se', '--seed', type=int,
-        help='value of the random seed (optional, default is None).')
+        help='value of the random seed (optional).')
     parser.add_argument('-mx', '--max_x_value', type=float, default=1500.0,
         help='maximum value for the x-coordinates')
     parser.add_argument('-my', '--max_y_value', type=float, default=750.0,
@@ -65,7 +65,7 @@ if __name__ == '__main__':
     parser.add_argument('-in', '--interval', type=int, default=10,
         help='interval param for the animation (small is fast).')
     parser.add_argument('-ra', '--random', action='store_true',
-        help='Stochastic policy (default: predicted mean), action: store_true')
+        help='Stochastic policy (replaces predicted mean), action: store_true')
     parser.add_argument('-w', '--weights_file', type=str,
         help='Name of the actor model weights file used for policy rendering.')
 
@@ -78,7 +78,7 @@ if __name__ == '__main__':
         help='number of obstacles in a single environment')
     parser.add_argument('-ms', '--max_step', type=int, default=1000, # NOTE: DEFAULT=100 FOR TESTING, change this later?
         help='maximum number of time steps in the simulation')
-    parser.add_argument('-el', '--episode_len', type=int, default=200, # NOTE: DEFAULT=100 FOR TESTING, change this later?
+    parser.add_argument('-el', '--episode_len', type=int, default=1000, # NOTE: DEFAULT=100 FOR TESTING, change this later?
         help='maximum number of steps in an episode')
     parser.add_argument('-mis', '--min_speed', type=float, default=3.,
         help='Minimum cut-off value for the speed.')
