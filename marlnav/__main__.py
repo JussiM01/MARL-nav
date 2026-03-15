@@ -114,7 +114,7 @@ if __name__ == '__main__':
         help='Option for bootstrapping critic in time cut-offs (no=0, yes=1).')
     parser.add_argument('-nt', '--num_total', type=int, default=1000000, # NOTE: CHANGE THIS LATER?
         help='Number of total steps to be executed (parallel included).')
-    parser.add_argument('-bl', '--buffer_len', type=int, default=100, # NOTE: CHANGE THIS LATER?
+    parser.add_argument('-bl', '--buffer_len', type=int, default=1000, # NOTE: CHANGE THIS LATER?
         help='Length parameter for the buffer.')
     parser.add_argument('-ne', '--num_epochs', type=int, default=5, # NOTE: CHANGE THIS LATER?
         help='Number of training epochs.')
